@@ -84,3 +84,6 @@ CLAUDE.md
 # package-lock.json
 # yarn.lock
 # pnpm-lock.yaml
+
+# Local npm cache (Windows)
+.npm-cache/
