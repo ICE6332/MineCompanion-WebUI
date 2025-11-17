@@ -1,0 +1,16 @@
+[project]
+name = "minecompanionai-webui"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "aiohttp>=3.13.2",
+    "aiosqlite>=0.21.0",
+    "anthropic>=0.73.0",
+    "fastapi>=0.121.2",
+    "openai>=2.8.0",
+    "pydantic>=2.12.4",
+    "python-dotenv>=1.2.1",
+    "pyyaml>=6.0.3",
+    "uvicorn[standard]>=0.38.0",
+    "websockets>=15.0.1",
+]
