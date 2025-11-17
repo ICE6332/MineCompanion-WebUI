@@ -51,6 +51,8 @@ export function CollapseMenuButton({
   const isSubmenuActive = submenus.some((submenu) =>
     submenu.active === undefined ? submenu.href === pathname : submenu.active
   );
+  // 顶层激活状态：优先使用显式 active，其次根据子菜单路径匹配
+  const isActive = active ?? isSubmenuActive;
   const [isCollapsed, setIsCollapsed] = useState<boolean>(isSubmenuActive);
 
   return isOpen ? (
@@ -64,7 +66,7 @@ export function CollapseMenuButton({
         asChild
       >
         <Button
-          variant={isSubmenuActive ? "secondary" : "ghost"}
+          variant={isActive ? "secondary" : "ghost"}
           className="w-full justify-start min-h-11 py-2"
         >
           <div className="w-full items-center flex justify-between">
@@ -137,7 +139,7 @@ export function CollapseMenuButton({
           <TooltipTrigger asChild>
             <DropdownMenuTrigger asChild>
               <Button
-                variant={isSubmenuActive ? "secondary" : "ghost"}
+                variant={isActive ? "secondary" : "ghost"}
                 className="w-full justify-start min-h-11 py-2 mb-1"
               >
                 <div className="w-full items-center flex justify-between">

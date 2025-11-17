@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import type { WsConnectionStatus } from "@/types/ws";
 
 export function Dashboard() {
   const { status: wsStatus, messages, connect } = useWsStore();
@@ -102,7 +103,7 @@ export function Dashboard() {
     connected: "bg-emerald-500",
     connecting: "bg-amber-500",
     disconnected: "bg-slate-400",
-  } as const;
+  } satisfies Record<WsConnectionStatus, string>;
 
   return (
     <main className="px-4 sm:px-6 lg:px-8 space-y-4 py-8">

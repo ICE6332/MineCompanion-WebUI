@@ -66,7 +66,8 @@ const shutdown = async (reason, exitCode = 0) => {
 const { commands, result } = concurrently(
   [
     { name: 'backend', command: 'npm run dev:backend', prefixColor: 'blue', cwd: projectRoot },
-    { name: 'frontend', command: 'npm run dev:frontend', prefixColor: 'magenta', cwd: projectRoot },
+    // 等待后端健康检查通过后再启动前端，避免代理初始连接被拒绝
+    { name: 'frontend', command: 'node scripts/wait-backend.js && npm run dev:frontend', prefixColor: 'magenta', cwd: projectRoot },
   ],
   {
     killOthers: ['failure', 'success'],

@@ -1,8 +1,8 @@
 import { create } from "zustand";
-import { ConnectionStatus } from "@/types/card";
+import type { WsConnectionStatus } from "@/types/ws";
 
 interface WsStore {
-    status: ConnectionStatus;
+    status: WsConnectionStatus;
     ws: WebSocket | null;
     messages: string[];
 
