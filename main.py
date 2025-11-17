@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
@@ -50,6 +51,13 @@ async def root_health_check():
 @app.get("/api/health/")
 async def health_check():
     return {"status": "ok", "version": app.version}
+
+
+@app.get("/", include_in_schema=False)
+@app.get("", include_in_schema=False)
+async def index():
+    # 根路径默认跳转到 API 文档，避免返回 404 Not Found
+    return RedirectResponse(url="/docs")
 
 
 if __name__ == "__main__":
