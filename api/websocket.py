@@ -237,7 +237,7 @@ async def handle_conversation_request(
             "message": reply,
         }
 
-        # 5. 转为紧凑格式
+        # 5. 转为紧凑格式（仅用于token统计，不发送）
         compact_response: Dict[str, Any] = CompactProtocol.compact(standard_response)
 
         # 6. Token 统计
@@ -248,8 +248,8 @@ async def handle_conversation_request(
             f'[Token Stats] 标准={stats["standard_tokens"]} 紧凑={stats["compact_tokens"]} 节省={stats["saved_percent"]}%'
         )
 
-        # 7. 发送响应
-        await websocket.send_json(compact_response)
+        # 7. 发送响应（发送标准格式给Mod，紧凑格式只用于LLM）
+        await websocket.send_json(standard_response)
         MetricsCollector.record_message_sent("conversation_response")
 
         # 8. 发布统计事件（供前端监控）
@@ -269,7 +269,7 @@ async def handle_conversation_request(
             },
         )
 
-        return json.dumps(compact_response)
+        return json.dumps(standard_response)
     except Exception as e:
         print(f"Error handling conversation request: {e}")
         import traceback

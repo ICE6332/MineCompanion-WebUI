@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
 from api import websocket, monitor_ws, stats
+from api.routes import llm
 
 app = FastAPI(
     title="MineCompanionAI-WebUI",
@@ -22,6 +23,7 @@ app.add_middleware(
 app.include_router(websocket.router, tags=["WebSocket"])
 app.include_router(monitor_ws.router, tags=["Monitor"])
 app.include_router(stats.router, prefix="/api/stats", tags=["Statistics"])
+app.include_router(llm.router)
 
 
 @app.on_event("startup")

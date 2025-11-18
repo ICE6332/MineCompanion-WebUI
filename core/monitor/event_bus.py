@@ -2,7 +2,7 @@
 
 from typing import Dict, List, Callable, Any, Optional
 from collections import deque
-from datetime import datetime
+from datetime import datetime, timezone
 from core.monitor.event_types import MonitorEventType
 import uuid
 
@@ -36,7 +36,8 @@ class EventBus:
         event = {
             "id": str(uuid.uuid4()),
             "type": event_type.value,
-            "timestamp": datetime.utcnow().isoformat(),
+            # 使用带时区的 UTC 时间，避免 Python 3.14+ 弃用 utcnow
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "data": data,
             "severity": severity,
         }

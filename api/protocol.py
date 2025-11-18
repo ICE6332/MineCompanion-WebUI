@@ -1,7 +1,7 @@
 """紧凑 JSON 协议解析与压缩工具。
 
-该模块提供 `CompactProtocol`，用于在“紧凑格式(短字段)”与“内部标准格式(长字段)”之间转换，
-并保持向后兼容：同时支持旧版包含 `data` 字段的标准消息结构。
+该模块提供 ``CompactProtocol``，用于在“紧凑格式(短字段)”与“内部标准格式(长字段)”之间转换，
+并保持向后兼容：同时支持旧版包含 ``data`` 字段的标准消息结构。
 """
 
 from typing import Any, Dict
@@ -39,6 +39,26 @@ class CompactProtocol:
     _LONG_TO_SHORT: Dict[str, str] = {v: k for k, v in SHORT_TO_LONG.items()}
     _TYPE_LONG_TO_SHORT: Dict[str, str] = {v: k for k, v in TYPE_MAP.items()}
 
+    # 字段别名映射（长/蛇形/简写 → 标准长字段名）
+    FIELD_ALIASES: Dict[str, str] = {
+        "playerName": "playerName",
+        "player_name": "playerName",
+        "player": "playerName",
+        "message": "message",
+        "msg": "message",
+        "companionName": "companionName",
+        "companion_name": "companionName",
+        "companion": "companionName",
+        "action": "action",
+        "position": "position",
+        "pos": "position",
+        "health": "health",
+        "hp": "health",
+        "id": "id",
+        "timestamp": "timestamp",
+        "type": "type",
+    }
+
     @classmethod
     def _expand_type(cls, value: Any) -> Any:
         """将类型值从短码展开为长字符串；若已为长字符串则原样返回。"""
@@ -58,72 +78,48 @@ class CompactProtocol:
         """紧凑格式 → 内部标准格式。
 
         兼容输入：
-        - 紧凑格式（短字段：如 `t`, `m` 等）；
-        - 新标准格式（长字段：如 `type`, `message` 等）；
-        - 旧版标准格式（顶层包含 `data`，内部键名如 `player_name`, `player`）。
+        - 紧凑格式（短字段：如 ``t``、``m`` 等）；
+        - 新标准格式（长字段：如 ``type``、``message`` 等）；
+        - 旧版标准格式（顶层包含 ``data``，内部键名如 ``player_name``、``player``）。
 
-        返回：展开后的标准格式字典（顶层长字段，无 `data` 嵌套）。
+        返回：展开后的标准格式字典（顶层长字段，无 ``data`` 嵌套）。
         """
         if not isinstance(compact_msg, dict):
             raise ValueError("parse 期望 dict 输入")
 
-        # 先浅拷贝，避免副作用
         src: Dict[str, Any] = dict(compact_msg)
         result: Dict[str, Any] = {}
 
-        # 1) 处理紧凑键名映射与已是长键名的回填
-        for key, value in src.items():
+        def _normalize_key(key: str) -> str:
             if key in cls.SHORT_TO_LONG:
-                long_key = cls.SHORT_TO_LONG[key]
-                # 展开类型字段
-                if long_key == "type":
-                    result[long_key] = cls._expand_type(value)
-                else:
-                    result[long_key] = value
-            elif key == "type":
-                result["type"] = cls._expand_type(value)
-            elif key != "data":
-                # 直接透传其他长键或非 data 字段
-                result[key] = value
+                return cls.SHORT_TO_LONG[key]
+            if key in cls.FIELD_ALIASES:
+                return cls.FIELD_ALIASES[key]
+            return key
 
-        # 2) 处理旧版带 data 的结构（向后兼容）
-        if isinstance(src.get("data"), dict):
-            data_obj: Dict[str, Any] = src["data"]
-            # 兼容不同命名：player_name / player / playerName → playerName
-            if "playerName" in data_obj:
-                result["playerName"] = data_obj.get("playerName")
-            elif "player_name" in data_obj:
-                result["playerName"] = data_obj.get("player_name")
-            elif "player" in data_obj:
-                result["playerName"] = data_obj.get("player")
+        def _assign(long_key: str, raw_value: Any) -> None:
+            if long_key == "type":
+                result[long_key] = cls._expand_type(raw_value)
+            else:
+                result[long_key] = raw_value
 
-            # message / msg → message
-            if "message" in data_obj:
-                result["message"] = data_obj.get("message")
-            elif "msg" in data_obj:
-                result["message"] = data_obj.get("msg")
+        # 1) 处理旧版 data 嵌套，优先填充基础字段
+        data_obj = src.get("data")
+        if isinstance(data_obj, dict):
+            for key, value in data_obj.items():
+                long_key = _normalize_key(key)
+                _assign(long_key, value)
 
-            # companionName / companion / companion_name → companionName
-            if "companionName" in data_obj:
-                result["companionName"] = data_obj.get("companionName")
-            elif "companion_name" in data_obj:
-                result["companionName"] = data_obj.get("companion_name")
-            elif "companion" in data_obj:
-                result["companionName"] = data_obj.get("companion")
+        # 2) 覆盖/补充顶层字段（紧凑键、长键、别名均可）
+        for key, value in src.items():
+            if key == "data":
+                continue
+            long_key = _normalize_key(key)
+            _assign(long_key, value)
 
-            # 其他常见字段
-            if "action" in data_obj:
-                result["action"] = data_obj.get("action")
-            if "position" in data_obj:
-                result["position"] = data_obj.get("position")
-            if "hp" in data_obj and "health" not in data_obj:
-                result["health"] = data_obj.get("hp")
-            elif "health" in data_obj:
-                result["health"] = data_obj.get("health")
-
-        # 3) 最终兜底：确保 type 字段为长字符串（若存在）
+        # 3) 确保 type 已展开（兜底处理短码）
         if "type" in result:
-            result["type"] = cls._expand_type(result["type"])  # 再次保证
+            result["type"] = cls._expand_type(result["type"])
 
         return result
 
