@@ -1,5 +1,16 @@
 import { useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { Activity, AlertTriangle, Clock3, Wifi, ChevronDown } from 'lucide-react';
+
+import { ContentLayout } from '@/components/admin-panel/content-layout';
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb';
 
 import type { MonitorEventType } from '@/types/monitor';
 
@@ -102,99 +113,115 @@ export const MonitorPanel = () => {
   );
 
   return (
-    <div className='space-y-6 px-4 sm:px-6 lg:px-8 py-8'>
-      {/* 标题栏 */}
-      <div className='space-y-2 mb-4'>
-        <h1 className='text-3xl font-bold'>监控面板</h1>
-        <p className='text-muted-foreground'>实时监控 Mod 连接和消息流</p>
+    <ContentLayout title="监控面板">
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink asChild>
+              <Link to="/">主页</Link>
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>监控面板</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+
+      <div className="mt-6 space-y-6">
+        {/* 标题栏 */}
+        <div className="space-y-2 mb-4">
+          <h2 className="text-3xl font-bold">监控面板</h2>
+          <p className="text-muted-foreground">实时监控 Mod 连接和消息流</p>
+        </div>
+
+        {/* 统计卡片 */}
+        <div className='grid gap-4 sm:grid-cols-2 xl:grid-cols-4'>
+          {statCards.map(({ title, value, description, Icon }) => (
+            <Card key={title}>
+              <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
+                <CardTitle className='text-sm font-medium'>{title}</CardTitle>
+                <Icon className='h-5 w-5 text-muted-foreground' aria-hidden />
+              </CardHeader>
+              <CardContent>
+                <div className='text-3xl font-bold tabular-nums'>{value}</div>
+                <p className='mt-1 text-xs text-muted-foreground'>{description}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* 连接状态 */}
+        <ConnectionStatus isConnected={isConnected} connectionStatus={connectionStatus} />
+
+        {/* 工具栏 */}
+        <Card>
+          <CardHeader className='pb-3'>
+            <CardTitle className='text-base'>筛选与视图控制</CardTitle>
+            <CardDescription>搜索事件、筛选类型，并切换滚动与时间戳显示</CardDescription>
+          </CardHeader>
+          <CardContent className='flex flex-wrap items-center gap-3 md:gap-4'>
+            <div className='flex-1 min-w-[220px]'>
+              <Input
+                placeholder='搜索事件...'
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                className='min-h-11'
+              />
+            </div>
+            <div className='min-w-[160px]'>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant='outline' className='w-full justify-between min-h-11'>
+                    {eventTypeLabels[eventTypeFilter]}
+                    <ChevronDown className='h-4 w-4 opacity-50' />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align='end' className='w-56'>
+                  <DropdownMenuRadioGroup value={eventTypeFilter} onValueChange={(value) => setEventTypeFilter(value as MonitorEventType | 'all')}>
+                    <DropdownMenuRadioItem value='all'>全部事件</DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value='mod_connected'>模组上线</DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value='mod_disconnected'>模组下线</DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value='frontend_connected'>前端连接</DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value='frontend_disconnected'>前端断开</DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value='message_received'>消息接收</DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value='message_sent'>消息发送</DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value='llm_request'>LLM 请求</DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value='llm_response'>LLM 响应</DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value='llm_error'>LLM 错误</DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value='chat_message'>聊天消息</DropdownMenuRadioItem>
+                  </DropdownMenuRadioGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+            <Button
+              variant={autoScroll ? 'default' : 'secondary'}
+              onClick={toggleAutoScroll}
+              className='min-h-11 px-4'
+            >
+              自动滚动：{autoScroll ? '开启' : '关闭'}
+            </Button>
+            <Button
+              variant={showTimestamps ? 'default' : 'secondary'}
+              onClick={toggleTimestamps}
+              className='min-h-11 px-4'
+            >
+              时间戳：{showTimestamps ? '显示' : '隐藏'}
+            </Button>
+            <Button variant='secondary' className='min-h-11 px-4' onClick={resetStats}>
+              重置统计
+            </Button>
+            <Button variant='destructive' className='min-h-11 px-4' onClick={clearHistory}>
+              清空日志
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* 事件日志 */}
+        <div className='pt-4'>
+          <EventLog events={events} />
+        </div>
       </div>
-
-      {/* 统计卡片 */}
-      <div className='grid gap-4 sm:grid-cols-2 xl:grid-cols-4'>
-        {statCards.map(({ title, value, description, Icon }) => (
-          <Card key={title}>
-            <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-              <CardTitle className='text-sm font-medium'>{title}</CardTitle>
-              <Icon className='h-5 w-5 text-muted-foreground' aria-hidden />
-            </CardHeader>
-            <CardContent>
-              <div className='text-3xl font-bold tabular-nums'>{value}</div>
-              <p className='mt-1 text-xs text-muted-foreground'>{description}</p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* 连接状态 */}
-      <ConnectionStatus isConnected={isConnected} connectionStatus={connectionStatus} />
-
-      {/* 工具栏 */}
-      <Card>
-        <CardHeader className='pb-3'>
-          <CardTitle className='text-base'>筛选与视图控制</CardTitle>
-          <CardDescription>搜索事件、筛选类型，并切换滚动与时间戳显示</CardDescription>
-        </CardHeader>
-        <CardContent className='flex flex-wrap items-center gap-3 md:gap-4'>
-          <div className='flex-1 min-w-[220px]'>
-            <Input
-              placeholder='搜索事件...'
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              className='min-h-11'
-            />
-          </div>
-          <div className='min-w-[160px]'>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant='outline' className='w-full justify-between min-h-11'>
-                  {eventTypeLabels[eventTypeFilter]}
-                  <ChevronDown className='h-4 w-4 opacity-50' />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align='end' className='w-56'>
-                <DropdownMenuRadioGroup value={eventTypeFilter} onValueChange={(value) => setEventTypeFilter(value as MonitorEventType | 'all')}>
-                  <DropdownMenuRadioItem value='all'>全部事件</DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem value='mod_connected'>模组上线</DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem value='mod_disconnected'>模组下线</DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem value='frontend_connected'>前端连接</DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem value='frontend_disconnected'>前端断开</DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem value='message_received'>消息接收</DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem value='message_sent'>消息发送</DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem value='llm_request'>LLM 请求</DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem value='llm_response'>LLM 响应</DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem value='llm_error'>LLM 错误</DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem value='chat_message'>聊天消息</DropdownMenuRadioItem>
-                </DropdownMenuRadioGroup>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-          <Button
-            variant={autoScroll ? 'default' : 'secondary'}
-            onClick={toggleAutoScroll}
-            className='min-h-11 px-4'
-          >
-            自动滚动：{autoScroll ? '开启' : '关闭'}
-          </Button>
-          <Button
-            variant={showTimestamps ? 'default' : 'secondary'}
-            onClick={toggleTimestamps}
-            className='min-h-11 px-4'
-          >
-            时间戳：{showTimestamps ? '显示' : '隐藏'}
-          </Button>
-          <Button variant='secondary' className='min-h-11 px-4' onClick={resetStats}>
-            重置统计
-          </Button>
-          <Button variant='destructive' className='min-h-11 px-4' onClick={clearHistory}>
-            清空日志
-          </Button>
-        </CardContent>
-      </Card>
-
-      {/* 事件日志 */}
-      <div className='pt-4'>
-        <EventLog events={events} />
-      </div>
-    </div>
+    </ContentLayout>
   );
 };

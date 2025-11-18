@@ -1,5 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { MessageSquare, ShieldCheck, Wifi, TrendingDown } from "lucide-react";
+
+import { ContentLayout } from "@/components/admin-panel/content-layout";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 
 import { Analytics } from "@/components/dashboard/analytics";
 import { TokenTrendChart } from "@/components/dashboard/token-trend-chart";
@@ -106,78 +117,94 @@ export function Dashboard() {
   } satisfies Record<WsConnectionStatus, string>;
 
   return (
-    <main className="px-4 sm:px-6 lg:px-8 space-y-4 py-8">
-      <div className="mb-4 flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">控制台概览</h1>
-          <p className="text-muted-foreground text-sm">一页掌握 Token 趋势、连接与系统健康状态</p>
-        </div>
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <span className={`h-2.5 w-2.5 rounded-full ${statusTone[wsStatus]}`}></span>
-          <span>当前连接：{wsStatus === "connected" ? "稳定" : wsStatus === "connecting" ? "建立中" : "未就绪"}</span>
-        </div>
-      </div>
+    <ContentLayout title="控制台">
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink asChild>
+              <Link to="/">主页</Link>
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>控制台</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
 
-      <Tabs orientation="vertical" defaultValue="overview" className="space-y-4">
-        <div className="w-full overflow-x-auto pb-2">
-          <TabsList>
-            <TabsTrigger value="overview">概览</TabsTrigger>
-            <TabsTrigger value="analytics">分析</TabsTrigger>
-          </TabsList>
+      <div className="mt-6 space-y-4">
+        <div className="mb-4 flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight">控制台概览</h2>
+            <p className="text-muted-foreground text-sm">一页掌握 Token 趋势、连接与系统健康状态</p>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span className={`h-2.5 w-2.5 rounded-full ${statusTone[wsStatus]}`}></span>
+            <span>当前连接：{wsStatus === "connected" ? "稳定" : wsStatus === "connecting" ? "建立中" : "未就绪"}</span>
+          </div>
         </div>
 
-        <TabsContent value="overview" className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {statCards.map(({ label, value, trend, icon: Icon }) => (
-              <Card key={label}>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">{label}</CardTitle>
-                  <Icon className="text-muted-foreground h-4 w-4" aria-hidden="true" />
+        <Tabs orientation="vertical" defaultValue="overview" className="space-y-4">
+          <div className="w-full overflow-x-auto pb-2">
+            <TabsList>
+              <TabsTrigger value="overview">概览</TabsTrigger>
+              <TabsTrigger value="analytics">分析</TabsTrigger>
+            </TabsList>
+          </div>
+
+          <TabsContent value="overview" className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {statCards.map(({ label, value, trend, icon: Icon }) => (
+                <Card key={label}>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">{label}</CardTitle>
+                    <Icon className="text-muted-foreground h-4 w-4" aria-hidden="true" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold flex items-center gap-2">
+                      {label === "WebSocket 连接状态" ? (
+                        <Badge variant="outline" className="gap-2">
+                          <span className={`h-2 w-2 rounded-full ${statusTone[wsStatus]}`}></span>
+                          {value}
+                        </Badge>
+                      ) : label === "系统状态" ? (
+                        <div className="flex items-center gap-2">
+                          <span className={`h-2 w-2 rounded-full ${wsStatus === "connected" ? "bg-emerald-500" : "bg-red-500"}`}></span>
+                          {value}
+                        </div>
+                      ) : (
+                        value
+                      )}
+                    </div>
+                    <p className="text-muted-foreground text-xs mt-1">{trend}</p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-7">
+              <TokenTrendChart
+                className="col-span-1 lg:col-span-4"
+                data={tokenTrendData}
+                loading={tokenTrendLoading}
+              />
+              <Card className="col-span-1 lg:col-span-3">
+                <CardHeader>
+                  <CardTitle>最新活动</CardTitle>
+                  <CardDescription>近期示例事件与通知</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold flex items-center gap-2">
-                    {label === "WebSocket 连接状态" ? (
-                      <Badge variant="outline" className="gap-2">
-                        <span className={`h-2 w-2 rounded-full ${statusTone[wsStatus]}`}></span>
-                        {value}
-                      </Badge>
-                    ) : label === "系统状态" ? (
-                      <div className="flex items-center gap-2">
-                        <span className={`h-2 w-2 rounded-full ${wsStatus === "connected" ? "bg-emerald-500" : "bg-red-500"}`}></span>
-                        {value}
-                      </div>
-                    ) : (
-                      value
-                    )}
-                  </div>
-                  <p className="text-muted-foreground text-xs mt-1">{trend}</p>
+                  <RecentSales />
                 </CardContent>
               </Card>
-            ))}
-          </div>
+            </div>
+          </TabsContent>
 
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-7">
-            <TokenTrendChart
-              className="col-span-1 lg:col-span-4"
-              data={tokenTrendData}
-              loading={tokenTrendLoading}
-            />
-            <Card className="col-span-1 lg:col-span-3">
-              <CardHeader>
-                <CardTitle>最新活动</CardTitle>
-                <CardDescription>近期示例事件与通知</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <RecentSales />
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="analytics" className="space-y-4">
-          <Analytics />
-        </TabsContent>
-      </Tabs>
-    </main>
+          <TabsContent value="analytics" className="space-y-4">
+            <Analytics />
+          </TabsContent>
+        </Tabs>
+      </div>
+    </ContentLayout>
   );
 }

@@ -1,4 +1,15 @@
 import { useState } from "react"
+import { Link } from "react-router-dom"
+
+import { ContentLayout } from "@/components/admin-panel/content-layout"
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb"
 
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
@@ -54,44 +65,60 @@ const TestCardPage = () => {
   }
 
   return (
-    <main className="space-y-6 p-6">
-      <header className="space-y-3">
-        <h1 className="text-3xl md:text-4xl font-bold">WebSocket 测试工具</h1>
-        <p className="text-muted-foreground max-w-3xl">
-          从 Web UI 直接向 AI 服务发送自定义 JSON 消息，用于测试 Mod ↔ Service 通信链路。
-        </p>
-      </header>
+    <ContentLayout title="角色测试">
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink asChild>
+              <Link to="/">主页</Link>
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>角色测试</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
 
-      <section aria-labelledby="ws-json-test" className="max-w-4xl">
-        <Card>
-          <CardHeader>
-            <CardTitle>发送自定义 JSON 消息</CardTitle>
-            <CardDescription>
-              编辑 JSON 负载并通过服务端转发给当前已连接的模组实例。建议先使用
-              <code className="mx-1 text-xs bg-muted px-1 py-0.5 rounded">conversation_message</code>
-              类型验证通信是否正常。
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Textarea
-              rows={14}
-              value={jsonText}
-              onChange={(event) => setJsonText(event.target.value)}
-              placeholder='在此粘贴要发送的 JSON，例如 { "type": "conversation_message", "data": { ... } }'
-              className="font-mono text-sm"
-            />
-            <div className="flex items-center gap-3">
-              <Button type="button" onClick={handleSendJson} disabled={sending}>
-                {sending ? "发送中..." : "发送 JSON 消息到模组"}
-              </Button>
-              {sendStatus ? (
-                <span className="text-sm text-muted-foreground">{sendStatus}</span>
-              ) : null}
-            </div>
-          </CardContent>
-        </Card>
-      </section>
-    </main>
+      <div className="mt-6 space-y-6">
+        <header className="space-y-3">
+          <h2 className="text-3xl md:text-4xl font-bold">WebSocket 测试工具</h2>
+          <p className="text-muted-foreground max-w-3xl">
+            从 Web UI 直接向 AI 服务发送自定义 JSON 消息，用于测试 Mod ↔ Service 通信链路。
+          </p>
+        </header>
+
+        <section aria-labelledby="ws-json-test" className="max-w-4xl">
+          <Card>
+            <CardHeader>
+              <CardTitle>发送自定义 JSON 消息</CardTitle>
+              <CardDescription>
+                编辑 JSON 负载并通过服务端转发给当前已连接的模组实例。建议先使用
+                <code className="mx-1 text-xs bg-muted px-1 py-0.5 rounded">conversation_message</code>
+                类型验证通信是否正常。
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Textarea
+                rows={14}
+                value={jsonText}
+                onChange={(event) => setJsonText(event.target.value)}
+                placeholder='在此粘贴要发送的 JSON，例如 { "type": "conversation_message", "data": { ... } }'
+                className="font-mono text-sm"
+              />
+              <div className="flex items-center gap-3">
+                <Button type="button" onClick={handleSendJson} disabled={sending}>
+                  {sending ? "发送中..." : "发送 JSON 消息到模组"}
+                </Button>
+                {sendStatus ? (
+                  <span className="text-sm text-muted-foreground">{sendStatus}</span>
+                ) : null}
+              </div>
+            </CardContent>
+          </Card>
+        </section>
+      </div>
+    </ContentLayout>
   )
 }
 
