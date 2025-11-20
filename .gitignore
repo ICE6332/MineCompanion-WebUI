@@ -19,6 +19,9 @@ requirements.txt
 .env.local
 .env.*.local
 
+# Configuration files with sensitive data
+config/settings.json
+
 # Node.js / Frontend
 node_modules/
 npm-debug.log*

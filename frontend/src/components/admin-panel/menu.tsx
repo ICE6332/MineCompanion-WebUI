@@ -1,5 +1,6 @@
 import { Ellipsis, Moon, Sun } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
+import { useRef } from "react";
 
 import { cn } from "@/lib/utils";
 import { getMenuList } from "@/lib/menu-list";
@@ -13,9 +14,101 @@ import {
   TooltipContent,
   TooltipProvider
 } from "@/components/ui/tooltip";
+import type { SettingsIconHandle } from "@/components/ui/settings";
+import { SunIcon } from "@/components/ui/sun";
+import { MoonIcon } from "@/components/ui/moon";
 
 interface MenuProps {
   isOpen: boolean | undefined;
+}
+
+interface MenuItemProps {
+  href: string;
+  label: string;
+  icon: any;
+  active?: boolean;
+  pathname: string;
+  isOpen: boolean | undefined;
+}
+
+/**
+ * MenuItem 组件 - 支持动画图标的菜单项
+ * 
+ * 工作原理：
+ * 1. 使用 useRef 创建一个指向图标的引用（iconRef）
+ * 2. 将这个 ref 传递给 Icon 组件（通过 ref={iconRef}）
+ * 3. 对于支持动画的图标（如 SettingsIcon），它们使用 forwardRef 暴露了控制方法：
+ *    - startAnimation(): 开始动画
+ *    - stopAnimation(): 停止动画
+ * 4. 当鼠标悬停在整个按钮上时，通过 iconRef.current 调用这些方法
+ * 5. 使用可选链操作符（?.）确保普通图标（没有这些方法）也能正常工作
+ */
+function MenuItem({ href, label, icon: Icon, active, pathname, isOpen }: MenuItemProps) {
+  // 创建对图标组件的引用，类型为 SettingsIconHandle（定义了动画控制方法）
+  const iconRef = useRef<SettingsIconHandle>(null);
+
+  // 鼠标进入按钮时的处理函数
+  const handleMouseEnter = () => {
+    // 如果图标支持动画（有 startAnimation 方法），则调用它
+    // 可选链 ?. 确保普通图标不会报错
+    iconRef.current?.startAnimation?.();
+  };
+
+  // 鼠标离开按钮时的处理函数
+  const handleMouseLeave = () => {
+    // 如果图标支持动画（有 stopAnimation 方法），则调用它
+    iconRef.current?.stopAnimation?.();
+  };
+
+  return (
+    <div className="w-full">
+      <TooltipProvider disableHoverableContent>
+        <Tooltip delayDuration={100}>
+          <TooltipTrigger asChild>
+            <Button
+              variant={
+                (active === undefined &&
+                  pathname.startsWith(href)) ||
+                  active
+                  ? "secondary"
+                  : "ghost"
+              }
+              className="w-full justify-start min-h-11 py-2 mb-1"
+              asChild
+              // 将悬停事件绑定在按钮上，而不是图标上
+              // 这样无论鼠标悬停在文字还是图标上，都能触发动画
+              onMouseEnter={handleMouseEnter}
+              onMouseLeave={handleMouseLeave}
+            >
+              <Link to={href}>
+                <span
+                  className={cn(isOpen === false ? "" : "mr-4")}
+                >
+                  {/* 将 ref 传递给图标组件，建立引用连接 */}
+                  <Icon size={18} ref={iconRef} />
+                </span>
+                <p
+                  className={cn(
+                    "max-w-[200px] truncate",
+                    isOpen === false
+                      ? "-translate-x-96 opacity-0"
+                      : "translate-x-0 opacity-100"
+                  )}
+                >
+                  {label}
+                </p>
+              </Link>
+            </Button>
+          </TooltipTrigger>
+          {isOpen === false && (
+            <TooltipContent side="right">
+              {label}
+            </TooltipContent>
+          )}
+        </Tooltip>
+      </TooltipProvider>
+    </div>
+  );
 }
 
 export function Menu({ isOpen }: MenuProps) {
@@ -24,8 +117,18 @@ export function Menu({ isOpen }: MenuProps) {
   const menuList = getMenuList(pathname);
   const { resolvedTheme, toggleTheme } = useTheme();
   const isDarkMode = resolvedTheme === "dark";
-  const ThemeIcon = isDarkMode ? Moon : Sun;
+  const ThemeIcon = isDarkMode ? MoonIcon : SunIcon;
   const themeLabel = isDarkMode ? "深色模式" : "浅色模式";
+
+  const themeIconRef = useRef<SettingsIconHandle>(null);
+
+  const handleThemeMouseEnter = () => {
+    themeIconRef.current?.startAnimation?.();
+  };
+
+  const handleThemeMouseLeave = () => {
+    themeIconRef.current?.stopAnimation?.();
+  };
 
   return (
     <ScrollArea className="[&>div>div[style]]:!block">
@@ -56,48 +159,15 @@ export function Menu({ isOpen }: MenuProps) {
               {menus.map(
                 ({ href, label, icon: Icon, active, submenus }, index) =>
                   !submenus || submenus.length === 0 ? (
-                    <div className="w-full" key={index}>
-                      <TooltipProvider disableHoverableContent>
-                        <Tooltip delayDuration={100}>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant={
-                                (active === undefined &&
-                                  pathname.startsWith(href)) ||
-                                active
-                              ? "secondary"
-                              : "ghost"
-                            }
-                              className="w-full justify-start min-h-11 py-2 mb-1"
-                              asChild
-                            >
-                              <Link to={href}>
-                                <span
-                                  className={cn(isOpen === false ? "" : "mr-4")}
-                                >
-                                  <Icon size={18} />
-                                </span>
-                                <p
-                                  className={cn(
-                                    "max-w-[200px] truncate",
-                                    isOpen === false
-                                      ? "-translate-x-96 opacity-0"
-                                      : "translate-x-0 opacity-100"
-                                  )}
-                                >
-                                  {label}
-                                </p>
-                              </Link>
-                            </Button>
-                          </TooltipTrigger>
-                          {isOpen === false && (
-                            <TooltipContent side="right">
-                              {label}
-                            </TooltipContent>
-                          )}
-                        </Tooltip>
-                      </TooltipProvider>
-                    </div>
+                    <MenuItem
+                      key={index}
+                      href={href}
+                      label={label}
+                      icon={Icon}
+                      active={active}
+                      pathname={pathname}
+                      isOpen={isOpen}
+                    />
                   ) : (
                     <div className="w-full" key={index}>
                       <CollapseMenuButton
@@ -125,9 +195,11 @@ export function Menu({ isOpen }: MenuProps) {
                     variant="outline"
                     className="w-full justify-center min-h-11 py-2"
                     aria-label={`切换${themeLabel}`}
+                    onMouseEnter={handleThemeMouseEnter}
+                    onMouseLeave={handleThemeMouseLeave}
                   >
                     <span className={cn(isOpen === false ? "" : "mr-4")}>
-                      <ThemeIcon size={18} />
+                      <ThemeIcon size={18} ref={themeIconRef} />
                     </span>
                     <p
                       className={cn(

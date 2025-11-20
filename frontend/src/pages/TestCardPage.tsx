@@ -93,9 +93,9 @@ const TestCardPage = () => {
             <CardHeader>
               <CardTitle>发送自定义 JSON 消息</CardTitle>
               <CardDescription>
-                编辑 JSON 负载并通过服务端转发给当前已连接的模组实例。建议先使用
+                编辑 JSON 并通过服务端转发到当前模组实例，用于验证通信是否正常。建议先使用
                 <code className="mx-1 text-xs bg-muted px-1 py-0.5 rounded">conversation_message</code>
-                类型验证通信是否正常。
+                类型作为示例。
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">

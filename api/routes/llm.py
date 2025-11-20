@@ -1,6 +1,6 @@
-"""LLM 路由（Mock 版本）。
+"""LLM 路由（真实服务版本）。
 
-该路由演示标准 JSON 请求与紧凑协议之间的转换流程，返回硬编码的对话响应。
+该路由接收玩家消息，通过 LLMService 调用真实大模型，并返回响应。
 """
 
 from typing import Any, Dict, List, Literal, Optional
@@ -10,6 +10,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, ConfigDict, Field
 
 from api.protocol import CompactProtocol
+from core.llm.service import llm_service
 
 logger = logging.getLogger("api.routes.llm")
 
@@ -45,32 +46,45 @@ class ConversationRequest(BaseModel):
 
 @router.post("/player")
 async def handle_player_request(payload: ConversationRequest) -> Dict[str, Any]:
-    """接收玩家消息，压缩为紧凑协议并返回模拟响应。"""
+    """接收玩家消息，压缩为紧凑协议并调用真实 LLM 服务。"""
 
     try:
         standard_request: Dict[str, Any] = payload.model_dump(
             by_alias=True, exclude_none=True
         )
-        compact_request = CompactProtocol.compact(standard_request)
-        logger.info("收到会话请求，已压缩为紧凑协议: %s", compact_request)
+        
+        # 1. 构造 Prompt
+        player_name = standard_request.get("playerName", "Player")
+        message_content = standard_request.get("message", "")
+        
+        # 简单的 Prompt 构造 (后续可移至 core/personality)
+        messages = [
+            {"role": "system", "content": f"你是一个 Minecraft 游戏中的 AI 伙伴。你的名字叫 {standard_request.get('companionName', 'AI')}。"},
+            {"role": "user", "content": f"[{player_name}]: {message_content}"}
+        ]
 
-        mock_standard_response: Dict[str, Any] = {
+        # 2. 调用 LLM 服务
+        logger.info(f"调用 LLM: {messages}")
+        response = await llm_service.chat_completion(messages=messages)
+        
+        # 3. 解析响应
+        llm_reply = response["choices"][0]["message"]["content"]
+        
+        # 4. 构造标准响应
+        standard_response: Dict[str, Any] = {
             "type": "conversation_response",
-            "playerName": standard_request.get("playerName"),
-            "message": "好的，我会跟着你！",
-            "action": [
-                {
-                    "type": "command",
-                    "command": "/say 收到指令！",
-                }
-            ],
+            "playerName": player_name,
+            "message": llm_reply,
+            # 暂时保留简单的动作逻辑，或者让 LLM 输出 JSON 格式的动作
+            "action": [], 
         }
 
-        compact_response = CompactProtocol.compact(mock_standard_response)
+        # 5. 协议转换 (保持兼容性)
+        compact_response = CompactProtocol.compact(standard_response)
         expanded_response = CompactProtocol.parse(compact_response)
-        logger.info("返回展开后的响应: %s", expanded_response)
+        logger.info("LLM 响应: %s", expanded_response)
 
         return expanded_response
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         logger.exception("处理 LLM 请求失败: %s", exc)
-        raise HTTPException(status_code=500, detail="LLM 处理失败，请稍后重试") from exc
+        raise HTTPException(status_code=500, detail=f"LLM 处理失败: {str(exc)}") from exc

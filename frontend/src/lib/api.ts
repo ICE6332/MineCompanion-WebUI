@@ -1,4 +1,9 @@
-import { Card } from "@/types/card";
+// TODO: 卡片类型后续按实际接口补全，这里先用最小占位类型
+export interface Card {
+    id: string;
+    name: string;
+    description?: string;
+}
 
 const API_BASE = "/api";
 

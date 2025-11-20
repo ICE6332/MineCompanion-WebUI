@@ -9,12 +9,17 @@ from core.monitor.event_bus import EventBus
 from core.monitor.event_types import MonitorEventType
 from core.monitor.metrics_collector import MetricsCollector
 from api.protocol import CompactProtocol
+from api.validation import ModMessage
+from api.rate_limiter import WebSocketRateLimiter
 from core.monitor.token_tracker import TokenTracker
 
 router = APIRouter()
 
 # 简单的内存连接管理器（后续可扩展为更复杂的实现）
 active_connections: Dict[str, WebSocket] = {}
+
+# WebSocket 速率限制器（每分钟最多 100 条消息）
+mod_rate_limiter = WebSocketRateLimiter(max_messages=100, window_seconds=60)
 
 
 @router.websocket("/ws")
@@ -39,6 +44,16 @@ async def websocket_endpoint(websocket: WebSocket):
         while True:
             # 接收消息
             data = await websocket.receive_text()
+            
+            # 检查速率限制
+            if not mod_rate_limiter.check_rate_limit(client_id):
+                error_response = {
+                    "type": "error",
+                    "data": {"message": "消息发送过快，请稍后再试（限制：100条/分钟）"},
+                }
+                await websocket.send_json(error_response)
+                continue  # 跳过此消息，但不断开连接
+            
             print(f"← Received from {client_id}: {data[:100]}...")
             try:
                 # 解析来自 Mod 的 JSON 消息
@@ -156,6 +171,7 @@ async def websocket_endpoint(websocket: WebSocket):
     except Exception as e:
         print(f"[ERR] WebSocket error for {client_id}: {e}")
     finally:
+        mod_rate_limiter.clear(client_id)
         active_connections.pop(client_id, None)
 
 
@@ -278,7 +294,7 @@ async def handle_conversation_request(
 
 
 @router.post("/api/ws/send-json")
-async def send_json_to_mod(message: Dict[str, Any]):
+async def send_json_to_mod(message: ModMessage):
     """
     从 Web UI 转发原始 JSON 消息到当前已连接的模组。
     主要用于开发阶段临时调试通信链路。
@@ -301,10 +317,10 @@ async def send_json_to_mod(message: Dict[str, Any]):
     if websocket is None:
         raise HTTPException(status_code=503, detail="模组连接已失效，请重新连接后重试")
 
-    # 将前端提供的 JSON 原样下发给模组
-    await websocket.send_json(message)
+    # 将前端提供的 JSON 原样下发给模组（已通过 Pydantic 验证）
+    await websocket.send_json(message.model_dump(exclude_none=True))
 
-    msg_type = message.get("type", "unknown")
+    msg_type = message.type
     MetricsCollector.record_message_sent(msg_type)
     EventBus.publish(
         MonitorEventType.MESSAGE_SENT,

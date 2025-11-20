@@ -6,6 +6,7 @@ import { useStore } from "@/hooks/use-store";
 import { cn } from "@/lib/utils";
 import { PanelsTopLeft } from "lucide-react";
 import { Link } from "react-router-dom";
+import { BotIcon } from "@/components/ui/bot";
 
 export function Sidebar() {
   const sidebar = useStore(useSidebar, (x) => x);
@@ -34,7 +35,7 @@ export function Sidebar() {
           asChild
         >
           <Link to="/dashboard" className="flex items-center gap-2">
-            <PanelsTopLeft className="w-6 h-6 mr-1" />
+            <BotIcon size={24} className="mr-1" />
             <h1
               className={cn(
                 "font-bold text-lg whitespace-nowrap transition-[transform,opacity,display] ease-in-out duration-300",

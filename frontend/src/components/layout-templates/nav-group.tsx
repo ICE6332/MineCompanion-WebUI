@@ -1,5 +1,5 @@
 import { type ReactNode } from 'react'
-import { Link, useLocation } from '@tanstack/react-router'
+import { Link, useLocation } from '../../router-placeholder'
 import { ChevronRight } from 'lucide-react'
 import {
   Collapsible,
@@ -178,8 +178,8 @@ function checkIsActive(href: string, item: NavItem, mainNav = false) {
     href === item.url || // /endpint?search=param
     href.split('?')[0] === item.url || // endpoint
     !!item?.items?.filter((i) => i.url === href).length || // if child nav is active
-    (mainNav &&
+    (mainNav && typeof item.url === 'string' &&
       href.split('/')[1] !== '' &&
-      href.split('/')[1] === item?.url?.split('/')[1])
+      href.split('/')[1] === item.url.split('/')[1])
   )
 }

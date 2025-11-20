@@ -5,6 +5,7 @@ import uvicorn
 
 from api import websocket, monitor_ws, stats
 from api.routes import llm
+from api.middleware import SecurityHeadersMiddleware
 
 app = FastAPI(
     title="MineCompanionAI-WebUI",
@@ -20,12 +21,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# 添加安全头部中间件
+app.add_middleware(SecurityHeadersMiddleware)
+
 app.include_router(websocket.router, tags=["WebSocket"])
 app.include_router(monitor_ws.router, tags=["Monitor"])
 app.include_router(stats.router, prefix="/api/stats", tags=["Statistics"])
 app.include_router(llm.router)
-
-
 @app.on_event("startup")
 async def startup_event():
     print("=" * 60)

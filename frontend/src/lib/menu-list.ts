@@ -1,4 +1,9 @@
-import { Monitor, Users, Settings, LayoutGrid } from "lucide-react";
+import { Monitor, Settings, LayoutGrid } from "lucide-react";
+import { SettingsIcon } from "@/components/ui/settings";
+import { MonitorCheckIcon } from "@/components/ui/monitor-check";
+import { UserRoundCheckIcon } from "@/components/ui/user-round-check";
+import { BlocksIcon } from "@/components/ui/blocks";
+import { BotMessageSquareIcon } from "@/components/ui/bot-message-square";
 
 type Submenu = {
   href: string;
@@ -27,7 +32,7 @@ export function getMenuList(pathname: string): Group[] {
         {
           href: "/",
           label: "控制台",
-          icon: LayoutGrid,
+          icon: BlocksIcon,
           submenus: []
         }
       ]
@@ -38,7 +43,12 @@ export function getMenuList(pathname: string): Group[] {
         {
           href: "/test-card",
           label: "角色测试",
-          icon: Users
+          icon: UserRoundCheckIcon
+        },
+        {
+          href: "/ai-chat",
+          label: "AI 对话",
+          icon: BotMessageSquareIcon
         }
       ]
     },
@@ -48,12 +58,12 @@ export function getMenuList(pathname: string): Group[] {
         {
           href: "/monitor",
           label: "监控面板",
-          icon: Monitor
+          icon: MonitorCheckIcon
         },
         {
-          href: "/settings",
-          label: "系统设置",
-          icon: Settings
+          href: "/model-settings",
+          label: "模型设置",
+          icon: SettingsIcon
         }
       ]
     }

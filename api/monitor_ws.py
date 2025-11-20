@@ -9,11 +9,16 @@ from uuid import uuid4
 from core.monitor.event_bus import EventBus
 from core.monitor.event_types import MonitorEventType
 from core.monitor.metrics_collector import MetricsCollector
+from api.validation import MonitorCommand
+from api.rate_limiter import WebSocketRateLimiter
 
 router = APIRouter()
 
 # 活跃监控客户端集合，避免重复推送
 active_monitor_clients: Set[WebSocket] = set()
+
+# 监控 WebSocket 速率限制器（每分钟最多 30 条命令）
+monitor_rate_limiter = WebSocketRateLimiter(max_messages=30, window_seconds=60)
 
 
 @router.websocket('/ws/monitor')
@@ -55,14 +60,30 @@ async def monitor_websocket(websocket: WebSocket) -> None:
         while True:
             # 接收前端发来的控制指令
             data = await websocket.receive_text()
+            
+            # 检查速率限制
+            if not monitor_rate_limiter.check_rate_limit(client_id):
+                await websocket.send_json({
+                    'type': 'error', 
+                    'message': '命令发送过快，请稍后再试（限制：30条/分钟）'
+                })
+                continue
 
             try:
-                command = json.loads(data)
+                command_dict = json.loads(data)
+                # 使用 Pydantic 验证命令
+                validated_cmd = MonitorCommand(**command_dict)
+                command_type = validated_cmd.type
             except json.JSONDecodeError:
                 await websocket.send_json({'type': 'error', 'message': '无效指令格式'})
                 continue
-
-            command_type = command.get('type')
+            except Exception as e:
+                # Pydantic 验证失败
+                await websocket.send_json({
+                    'type': 'error', 
+                    'message': f'无效的命令: {str(e)}'
+                })
+                continue
 
             # 根据指令类型执行不同管理操作
             if command_type == 'clear_history':
@@ -71,8 +92,6 @@ async def monitor_websocket(websocket: WebSocket) -> None:
             elif command_type == 'reset_stats':
                 MetricsCollector.reset_stats()
                 await websocket.send_json({'type': 'ack', 'message': '统计数据已重置'})
-            else:
-                await websocket.send_json({'type': 'error', 'message': '未知指令类型'})
 
     except WebSocketDisconnect:
         print(f'[ERR] Monitor client disconnected: {client_id}')
@@ -81,6 +100,7 @@ async def monitor_websocket(websocket: WebSocket) -> None:
         print(f'[ERR] Monitor WebSocket error: {exc}')
     finally:
         # 清理客户端状态并通知事件总线
+        monitor_rate_limiter.clear(client_id)
         active_monitor_clients.discard(websocket)
         EventBus.publish(MonitorEventType.FRONTEND_DISCONNECTED, {'client_id': client_id})
 

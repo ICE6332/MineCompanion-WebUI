@@ -24,6 +24,7 @@
             "headers": {
                 "X-License-Key": "${SHADCNDESIGN_LICENSE_KEY}"
             }
-        }
+        },
+        "@blocks": "https://blocks.so/r/{name}.json"
     }
 }

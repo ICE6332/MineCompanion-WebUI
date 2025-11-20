@@ -61,7 +61,8 @@ export const MonitorPanel = () => {
     llm_request: 'LLM 请求',
     llm_response: 'LLM 响应',
     llm_error: 'LLM 错误',
-    chat_message: '聊天消息'
+    chat_message: '聊天消息',
+    token_used: 'Token 使用统计',
   };
 
   const totalMessages = useMemo(() => {
@@ -93,13 +94,13 @@ export const MonitorPanel = () => {
             <span>{isConnected ? '已连接' : '未连接'}</span>
           </div>
         ),
-        description: isConnected ? '实时同步正常' : '等待连接或检查服务',
+        description: isConnected ? '实时同步正常' : '等待连接或检查服务器',
         Icon: Wifi
       },
       {
         title: '平均响应时间',
         value: '-- ms',
-        description: '后端指标接入前的占位',
+        description: '等待接入后端指标，暂作占位',
         Icon: Clock3
       },
       {
@@ -190,17 +191,19 @@ export const MonitorPanel = () => {
                     <DropdownMenuRadioItem value='llm_response'>LLM 响应</DropdownMenuRadioItem>
                     <DropdownMenuRadioItem value='llm_error'>LLM 错误</DropdownMenuRadioItem>
                     <DropdownMenuRadioItem value='chat_message'>聊天消息</DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value='token_used'>Token 使用统计</DropdownMenuRadioItem>
                   </DropdownMenuRadioGroup>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-            <Button
-              variant={autoScroll ? 'default' : 'secondary'}
-              onClick={toggleAutoScroll}
-              className='min-h-11 px-4'
-            >
-              自动滚动：{autoScroll ? '开启' : '关闭'}
-            </Button>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+              <Button
+                variant={autoScroll ? 'default' : 'secondary'}
+                onClick={toggleAutoScroll}
+                className='min-h-11 px-4'
+                aria-label='自动滚动'
+              >
+                {autoScroll ? '开启' : '关闭'}
+              </Button>
             <Button
               variant={showTimestamps ? 'default' : 'secondary'}
               onClick={toggleTimestamps}

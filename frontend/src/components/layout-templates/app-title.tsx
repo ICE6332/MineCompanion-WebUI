@@ -1,4 +1,4 @@
-import { Link } from '@tanstack/react-router'
+import { Link } from '../../router-placeholder'
 import { Menu, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
@@ -7,18 +7,13 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@/components/ui/sidebar'
-import { Button } from '../ui/button'
 
 export function AppTitle() {
   const { setOpenMobile } = useSidebar()
   return (
     <SidebarMenu>
       <SidebarMenuItem>
-        <SidebarMenuButton
-          size='lg'
-          className='gap-0 py-0 hover:bg-transparent active:bg-transparent'
-          asChild
-        >
+        <SidebarMenuButton className='gap-0 py-0 hover:bg-transparent active:bg-transparent' asChild>
           <div>
             <Link
               to='/'
@@ -28,37 +23,10 @@ export function AppTitle() {
               <span className='truncate font-bold'>Shadcn-Admin</span>
               <span className='truncate text-xs'>Vite + ShadcnUI</span>
             </Link>
-            <ToggleSidebar />
+            {/* 顶部模板暂未启用侧边栏按钮，保留占位 */}
           </div>
         </SidebarMenuButton>
       </SidebarMenuItem>
     </SidebarMenu>
-  )
-}
-
-function ToggleSidebar({
-  className,
-  onClick,
-  ...props
-}: React.ComponentProps<typeof Button>) {
-  const { toggleSidebar } = useSidebar()
-
-  return (
-    <Button
-      data-sidebar='trigger'
-      data-slot='sidebar-trigger'
-      variant='ghost'
-      size='icon'
-      className={cn('aspect-square size-8 max-md:scale-125', className)}
-      onClick={(event) => {
-        onClick?.(event)
-        toggleSidebar()
-      }}
-      {...props}
-    >
-      <X className='md:hidden' />
-      <Menu className='max-md:hidden' />
-      <span className='sr-only'>Toggle Sidebar</span>
-    </Button>
   )
 }

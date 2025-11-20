@@ -4,6 +4,8 @@ import AdminPanelLayout from "@/components/admin-panel/admin-panel-layout";
 import { MonitorPanel } from "@/components/monitor/MonitorPanel";
 import { Dashboard } from "@/pages/Dashboard";
 import { TestCardPage } from "@/pages/TestCardPage";
+import { ModelSettingsPage } from "@/pages/ModelSettingsPage";
+import { AiChatPage } from "@/pages/AiChatPage";
 
 function App() {
     return (
@@ -13,7 +15,9 @@ function App() {
                     <Routes>
                         <Route path="/" element={<Dashboard />} />
                         <Route path="/test-card" element={<TestCardPage />} />
+                        <Route path="/ai-chat" element={<AiChatPage />} />
                         <Route path="/monitor" element={<MonitorPanel />} />
+                        <Route path="/model-settings" element={<ModelSettingsPage />} />
                     </Routes>
                 </AdminPanelLayout>
             </BrowserRouter>
