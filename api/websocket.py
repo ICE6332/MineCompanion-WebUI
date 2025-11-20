@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import uuid4
 from typing import Any, Dict
 
@@ -12,12 +12,15 @@ from api.validation import ModMessage
 from api.rate_limiter import WebSocketRateLimiter
 from core.monitor.token_tracker import TokenTracker
 from core.dependencies import EventBusDep, MetricsDep, ConnectionManagerDep
+from config.settings import settings
 
 router = APIRouter()
 logger = logging.getLogger("api.websocket")
 
-# WebSocket 速率限制器（每分钟最多 100 条消息）
-mod_rate_limiter = WebSocketRateLimiter(max_messages=100, window_seconds=60)
+# WebSocket 速率限制器（配置驱动）
+mod_rate_limiter = WebSocketRateLimiter(
+    max_messages=settings.rate_limit_messages, window_seconds=settings.rate_limit_window
+)
 
 
 @router.websocket("/ws")

@@ -2,21 +2,58 @@ from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
+import os
+import logging
+from contextlib import asynccontextmanager
 
 from api import websocket, monitor_ws, stats
 from api.routes import llm
 from api.middleware import SecurityHeadersMiddleware
-from core.dependencies import get_event_bus
 from api.monitor_ws import register_monitor_subscriptions
 from api.health import router as health_router
 from core.logging_config import setup_logging
-import os
-import logging
+from config.settings import settings
+from core.monitor.event_bus import EventBus
+from core.monitor.metrics_collector import MetricsCollector
+from core.monitor.connection_manager import ConnectionManager
+from core.llm.service import LLMService
+from core.storage.memory import MemoryCacheStorage
+from core.storage.redis import RedisCacheStorage
+
+
+logger = setup_logging(level=os.getenv("LOG_LEVEL", "INFO"), log_file=os.getenv("LOG_FILE"))
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: 初始化共享资源
+    cache_storage = (
+        RedisCacheStorage(settings.redis_url) if settings.storage_backend == "redis" else MemoryCacheStorage()
+    )
+    app.state.cache_storage = cache_storage
+    app.state.event_bus = EventBus(history_size=settings.event_history_size)
+    app.state.metrics = MetricsCollector()
+    app.state.connection_manager = ConnectionManager()
+    app.state.llm_service = LLMService(cache_storage=cache_storage)
+
+    logger.info("存储后端: %s", settings.storage_backend)
+    # 注册监控事件订阅，将事件广播到前端监控页面
+    register_monitor_subscriptions(app.state.event_bus)
+    yield
+
+    # Shutdown: 清理资源
+    if hasattr(cache_storage, "close"):
+        try:
+            await cache_storage.close()  # type: ignore[attr-defined]
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("关闭缓存存储失败: %s", exc)
+
 
 app = FastAPI(
     title="MineCompanionAI-WebUI",
     version="0.4.0",
     description="AI Companion Control Panel & Service",
+    lifespan=lifespan,
 )
 
 app.add_middleware(
@@ -35,9 +72,6 @@ app.include_router(monitor_ws.router, tags=["Monitor"])
 app.include_router(stats.router, prefix="/api/stats", tags=["Statistics"])
 app.include_router(llm.router)
 app.include_router(health_router)
-
-# 初始化日志
-logger = setup_logging(level=os.getenv("LOG_LEVEL", "INFO"), log_file=os.getenv("LOG_FILE"))
 @app.on_event("startup")
 async def startup_event():
     logger.info("=" * 60)
@@ -47,9 +81,6 @@ async def startup_event():
     logger.info("WebSocket: ws://localhost:8080/ws")
     logger.info("Monitor WS: ws://localhost:8080/ws/monitor")
     logger.info("=" * 60)
-    # 注册监控事件订阅，将事件广播到前端监控页面
-    event_bus = get_event_bus()
-    register_monitor_subscriptions(event_bus)
 
 
 @app.on_event("shutdown")

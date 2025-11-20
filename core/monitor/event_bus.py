@@ -10,9 +10,9 @@ import uuid
 class EventBus:
     """负责事件分发与记录的实例化事件总线。"""
 
-    def __init__(self) -> None:
+    def __init__(self, history_size: int = 100) -> None:
         self._subscribers: Dict[MonitorEventType, List[Callable[[Dict[str, Any]], None]]] = {}
-        self._event_history: deque = deque(maxlen=100)
+        self._event_history: deque = deque(maxlen=history_size)
 
     def publish(
         self,

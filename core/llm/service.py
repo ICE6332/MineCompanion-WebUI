@@ -6,11 +6,15 @@
 import os
 import json
 import logging
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 from pathlib import Path
 from dotenv import load_dotenv
 
 import litellm
+
+from core.llm.cache import generate_cache_key
+from core.storage.interfaces import CacheStorage
+from config.settings import settings
 
 # 加载环境变量
 load_dotenv()
@@ -21,8 +25,9 @@ logger = logging.getLogger("core.llm.service")
 class LLMService:
     """LLM 服务类，封装 LiteLLM 调用。"""
 
-    def __init__(self):
+    def __init__(self, cache_storage: CacheStorage | None = None):
         self.config = self._load_config()
+        self.cache = cache_storage
         self._setup_litellm()
 
     def _load_config(self) -> Dict[str, Any]:
@@ -115,11 +120,29 @@ class LLMService:
             # 合并其他参数
             params.update(kwargs)
 
-            logger.info(f"发送 LLM 请求: model={full_model_name}, base_url={self.config.get('base_url')}")
-            
+            cache_key = None
+            if settings.llm_cache_enabled and self.cache:
+                cache_key = generate_cache_key(messages, self.config["model"], temperature)
+                cached = await self.cache.get(cache_key)
+                if cached:
+                    logger.info("✅ LLM 缓存命中: %s", cache_key[:16])
+                    return json.loads(cached)
+
+            logger.info(
+                "发送 LLM 请求: model=%s, base_url=%s",
+                full_model_name,
+                self.config.get("base_url"),
+            )
+
             # 调用 LiteLLM (异步)
             response = await litellm.acompletion(**params)
-            
+
+            if settings.llm_cache_enabled and self.cache and cache_key:
+                try:
+                    await self.cache.set(cache_key, json.dumps(response), ttl=settings.llm_cache_ttl)
+                except Exception as cache_exc:  # noqa: BLE001
+                    logger.warning("写入缓存失败: %s", cache_exc)
+
             return response
 
         except Exception as e:

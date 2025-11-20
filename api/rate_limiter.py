@@ -1,7 +1,7 @@
 """WebSocket 速率限制器"""
 
 from collections import defaultdict, deque
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict
 
 

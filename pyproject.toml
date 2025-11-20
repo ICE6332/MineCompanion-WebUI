@@ -10,6 +10,7 @@ dependencies = [
     "litellm>=1.80.0",
     "openai>=2.8.0",
     "pydantic>=2.12.4",
+    "pydantic-settings>=2.6.0",
     "python-dotenv>=1.2.1",
     "pyyaml>=6.0.3",
     "uvicorn[standard]>=0.38.0",
@@ -21,4 +22,7 @@ dev = [
     "pytest>=8.3.3",
     "pytest-asyncio>=0.23.6",
     "pytest-cov>=5.0.0",
+]
+redis = [
+    "redis>=5.0.8",
 ]
