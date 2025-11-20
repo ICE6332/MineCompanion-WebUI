@@ -17,6 +17,7 @@ const typeLabels: Record<MonitorEventType, string> = {
   frontend_disconnected: "前端断开",
   message_received: "消息接收",
   message_sent: "消息发送",
+  token_stats: "Token 使用统计",
   llm_request: "LLM 请求",
   llm_response: "LLM 响应",
   llm_error: "LLM 错误",

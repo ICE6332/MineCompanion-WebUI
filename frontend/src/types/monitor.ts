@@ -8,6 +8,7 @@ export type MonitorEventType =
   | 'frontend_disconnected'
   | 'message_received'
   | 'message_sent'
+  | 'token_stats'
   | 'llm_request'
   | 'llm_response'
   | 'llm_error'

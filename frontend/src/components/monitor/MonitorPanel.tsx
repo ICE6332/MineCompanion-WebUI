@@ -58,11 +58,11 @@ export const MonitorPanel = () => {
     frontend_disconnected: '前端断开',
     message_received: '消息接收',
     message_sent: '消息发送',
+    token_stats: 'Token 使用统计',
     llm_request: 'LLM 请求',
     llm_response: 'LLM 响应',
     llm_error: 'LLM 错误',
     chat_message: '聊天消息',
-    token_used: 'Token 使用统计',
   };
 
   const totalMessages = useMemo(() => {
@@ -187,14 +187,14 @@ export const MonitorPanel = () => {
                     <DropdownMenuRadioItem value='frontend_disconnected'>前端断开</DropdownMenuRadioItem>
                     <DropdownMenuRadioItem value='message_received'>消息接收</DropdownMenuRadioItem>
                     <DropdownMenuRadioItem value='message_sent'>消息发送</DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value='token_stats'>Token 使用统计</DropdownMenuRadioItem>
                     <DropdownMenuRadioItem value='llm_request'>LLM 请求</DropdownMenuRadioItem>
                     <DropdownMenuRadioItem value='llm_response'>LLM 响应</DropdownMenuRadioItem>
                     <DropdownMenuRadioItem value='llm_error'>LLM 错误</DropdownMenuRadioItem>
                     <DropdownMenuRadioItem value='chat_message'>聊天消息</DropdownMenuRadioItem>
-                    <DropdownMenuRadioItem value='token_used'>Token 使用统计</DropdownMenuRadioItem>
                   </DropdownMenuRadioGroup>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                </DropdownMenuContent>
+              </DropdownMenu>
               </div>
               <Button
                 variant={autoScroll ? 'default' : 'secondary'}
