@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from typing import Literal
+from pydantic import ConfigDict
 from pydantic_settings import BaseSettings
 
 
@@ -22,9 +23,10 @@ class Settings(BaseSettings):
     rate_limit_messages: int = 100
     rate_limit_window: int = 60
 
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
+    model_config = ConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+    )
 
 
 settings = Settings()

@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import Depends, Request
+from fastapi import Depends
+from starlette.requests import HTTPConnection
 
 from core.interfaces import (
     EventBusInterface,
@@ -15,26 +16,27 @@ from core.interfaces import (
 from core.storage.interfaces import CacheStorage
 
 # 获取依赖实例（均由 lifespan 初始化存入 app.state）
+# 使用 HTTPConnection 替代 Request，兼容 HTTP 和 WebSocket 端点
 
 
-def get_event_bus(request: Request) -> EventBusInterface:
-    return request.app.state.event_bus
+def get_event_bus(conn: HTTPConnection) -> EventBusInterface:
+    return conn.app.state.event_bus
 
 
-def get_metrics(request: Request) -> MetricsInterface:
-    return request.app.state.metrics
+def get_metrics(conn: HTTPConnection) -> MetricsInterface:
+    return conn.app.state.metrics
 
 
-def get_llm_service(request: Request) -> LLMServiceInterface:
-    return request.app.state.llm_service
+def get_llm_service(conn: HTTPConnection) -> LLMServiceInterface:
+    return conn.app.state.llm_service
 
 
-def get_connection_manager(request: Request) -> ConnectionManagerInterface:
-    return request.app.state.connection_manager
+def get_connection_manager(conn: HTTPConnection) -> ConnectionManagerInterface:
+    return conn.app.state.connection_manager
 
 
-def get_cache_storage(request: Request) -> CacheStorage:
-    return request.app.state.cache_storage
+def get_cache_storage(conn: HTTPConnection) -> CacheStorage:
+    return conn.app.state.cache_storage
 
 
 # 类型别名，便于在路由上直接声明
