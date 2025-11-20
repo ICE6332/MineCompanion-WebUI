@@ -90,3 +90,4 @@ CLAUDE.md
 
 # Local npm cache (Windows)
 .npm-cache/
+/docs.md
