@@ -13,6 +13,8 @@ from api.rate_limiter import WebSocketRateLimiter
 from core.monitor.token_tracker import TokenTracker
 from core.dependencies import EventBusDep, MetricsDep, ConnectionManagerDep
 from config.settings import settings
+from api.handlers.registry import get_handler
+from api.handlers.context import HandlerContext
 
 router = APIRouter()
 logger = logging.getLogger("api.websocket")
@@ -129,19 +131,11 @@ async def websocket_endpoint(
             metrics.record_message_received(msg_type)
             metrics.update_mod_last_message()
 
+            handler = get_handler(msg_type)
+            context = HandlerContext(client_id=client_id, event_bus=event_bus, metrics=metrics)
             response_preview = None
-            if msg_type == "connection_init":
-                response_preview = await handle_connection_init(
-                    websocket, message, client_id, event_bus, metrics
-                )
-            elif msg_type == "game_state_update":
-                response_preview = await handle_game_state_update(
-                    websocket, message, client_id, event_bus, metrics
-                )
-            elif msg_type == "conversation_request":
-                response_preview = await handle_conversation_request(
-                    websocket, message, client_id, event_bus, metrics
-                )
+            if handler:
+                response_preview = await handler.handle(websocket, normalized_msg, context)
             else:
                 error_payload = {
                     "type": "error",
@@ -179,138 +173,8 @@ async def websocket_endpoint(
         conn_mgr.remove(client_id)
 
 
-async def handle_connection_init(
-    websocket: WebSocket,
-    message: Dict[str, Any],
-    client_id: str,
-    event_bus: EventBusDep,
-    metrics: MetricsDep,
-):
-    """处理连接初始化并返回确认"""
-    response = {
-        "type": "connection_ack",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "data": {"client_id": client_id},
-    }
-    await websocket.send_json(response)
-    event_bus.publish(
-        MonitorEventType.MESSAGE_SENT,
-        {
-            "client_id": client_id,
-            "message_type": "connection_ack",
-            "timestamp": response["timestamp"],
-        },
-    )
-    metrics.record_message_sent("connection_ack")
-    return json.dumps(response)
 
 
-async def handle_game_state_update(
-    websocket: WebSocket,
-    message: Dict[str, Any],
-    client_id: str,
-    event_bus: EventBusDep,
-    metrics: MetricsDep,
-):
-    """处理游戏状态更新"""
-    try:
-        # 提取游戏状态数据
-        game_state = message.get("data", {})
-        player_name = game_state.get("player_name", "Unknown")
-
-        # 这里未来会处理游戏状态
-        # 目前只是记录和确认
-        response = {
-            "type": "game_state_ack",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "data": {"status": "received", "player": player_name},
-        }
-        await websocket.send_json(response)
-        metrics.record_message_sent("game_state_ack")
-        event_bus.publish(
-            MonitorEventType.MESSAGE_SENT,
-            {
-                "client_id": client_id,
-                "message_type": "game_state_ack",
-                "timestamp": response["timestamp"],
-            },
-        )
-        return json.dumps(response)
-    except Exception as e:
-        logger.error("Error handling game state: %s", e)
-        return None
-
-
-async def handle_conversation_request(
-    websocket: WebSocket,
-    message: Dict[str, Any],
-    client_id: str,
-    event_bus: EventBusDep,
-    metrics: MetricsDep,
-):
-    """处理对话请求"""
-    try:
-        # 1. 解析紧凑消息（兼容标准/旧版 data 结构）
-        standard_message: Dict[str, Any] = CompactProtocol.parse(message)
-
-        # 2. 提取数据
-        player_name: str = standard_message.get("playerName", "Player")
-        player_message: str = standard_message.get("message", "")
-        message_id: str = standard_message.get("id", str(uuid4()))
-
-        # 3. Echo 模式（模拟 LLM）
-        reply: str = f"[Echo] 收到：{player_message}"
-
-        # 4. 构造标准响应（顶层长字段，无 data 嵌套）
-        standard_response: Dict[str, Any] = {
-            "id": message_id,
-            "type": "conversation_response",
-            "companionName": "AICompanion",
-            "message": reply,
-        }
-
-        # 5. 转为紧凑格式（仅用于token统计，不发送）
-        compact_response: Dict[str, Any] = CompactProtocol.compact(standard_response)
-
-        # 6. Token 统计
-        stats: Dict[str, Any] = TokenTracker.compare(standard_response, compact_response)
-        stats["client_id"] = client_id
-        stats["message_type"] = "conversation"
-        logger.info(
-            "[Token Stats] 标准=%s 紧凑=%s 节省=%s%%",
-            stats["standard_tokens"],
-            stats["compact_tokens"],
-            stats["saved_percent"],
-        )
-
-        # 7. 发送响应（发送标准格式给Mod，紧凑格式只用于LLM）
-        await websocket.send_json(standard_response)
-        metrics.record_message_sent("conversation_response")
-
-        # 8. 发布统计事件（供前端监控）
-        # 记录实际消耗的紧凑格式 token 数量
-        metrics.record_token_usage(stats["compact_tokens"])
-        event_bus.publish(
-            MonitorEventType.TOKEN_STATS,
-            stats,
-        )
-
-        event_bus.publish(
-            MonitorEventType.MESSAGE_SENT,
-            {
-                "client_id": client_id,
-                "message_type": "conversation_response",
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-            },
-        )
-
-        return json.dumps(standard_response)
-    except Exception as e:
-        logger.exception("Error handling conversation request: %s", e)
-        return None
-
-
-@router.post("/api/ws/send-json")
 @router.post("/api/ws/send-json")
 async def send_json_to_mod(
     message: ModMessage,
