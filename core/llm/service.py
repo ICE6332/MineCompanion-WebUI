@@ -127,5 +127,4 @@ class LLMService:
             # 可以在这里做更细致的错误处理，比如重试或返回特定错误码
             raise e
 
-# 单例实例
-llm_service = LLMService()
+# 不再导出模块级单例实例，实例由依赖注入工厂管理

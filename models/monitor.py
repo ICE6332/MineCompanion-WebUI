@@ -16,7 +16,7 @@ class MonitorEvent(BaseModel):
     # 事件类型
     type: str = Field(..., description="事件类型")
     # 时间戳使用 UTC 时间
-    timestamp: datetime = Field(default_factory=datetime.utcnow, description="事件时间戳（UTC）")
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), description="事件时间戳（UTC）")
     # 附带的数据字典
     data: Dict[str, Any] = Field(..., description="事件数据")
     # 严重程度标识
@@ -48,7 +48,7 @@ class MessageStats(BaseModel):
     # 按类型统计消息数量
     messages_per_type: Dict[str, int] = Field(default_factory=dict, description="按类型统计的消息数量")
     # 最近一次重置时间
-    last_reset_at: datetime = Field(default_factory=datetime.utcnow, description="最近一次统计重置时间")
+    last_reset_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), description="最近一次统计重置时间")
 
 
 class TokenTrendPoint(BaseModel):

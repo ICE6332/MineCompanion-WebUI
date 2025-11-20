@@ -4,6 +4,7 @@
 """
 
 import asyncio
+import pytest
 import os
 import sys
 from pathlib import Path
@@ -11,14 +12,17 @@ from pathlib import Path
 # 添加项目根目录到 Python 路径
 sys.path.append(str(Path(__file__).parent.parent))
 
-from core.llm.service import llm_service
+from core.llm.service import LLMService
 
+@pytest.mark.asyncio
 async def test_llm_service():
     print("=" * 60)
     print("LLM 服务测试")
     print("=" * 60)
     
     # 1. 检查配置
+    llm_service = LLMService()
+
     print(f"[配置检查]")
     print(f"Provider: {llm_service.config['provider']}")
     print(f"Model: {llm_service.config['model']}")

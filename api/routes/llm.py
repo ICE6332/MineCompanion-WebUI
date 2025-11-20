@@ -10,7 +10,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, ConfigDict, Field
 
 from api.protocol import CompactProtocol
-from core.llm.service import llm_service
+from core.dependencies import LLMDep
 
 logger = logging.getLogger("api.routes.llm")
 
@@ -45,7 +45,7 @@ class ConversationRequest(BaseModel):
 
 
 @router.post("/player")
-async def handle_player_request(payload: ConversationRequest) -> Dict[str, Any]:
+async def handle_player_request(payload: ConversationRequest, llm: LLMDep) -> Dict[str, Any]:
     """接收玩家消息，压缩为紧凑协议并调用真实 LLM 服务。"""
 
     try:
@@ -65,7 +65,7 @@ async def handle_player_request(payload: ConversationRequest) -> Dict[str, Any]:
 
         # 2. 调用 LLM 服务
         logger.info(f"调用 LLM: {messages}")
-        response = await llm_service.chat_completion(messages=messages)
+        response = await llm.chat_completion(messages=messages)
         
         # 3. 解析响应
         llm_reply = response["choices"][0]["message"]["content"]

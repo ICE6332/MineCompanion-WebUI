@@ -9,7 +9,7 @@ class WebSocketMessage(BaseModel):
     id: str = Field(..., description="消息唯一标识")
     type: str = Field(..., description="消息类型")
     timestamp: str = Field(
-        default_factory=lambda: datetime.utcnow().isoformat(), description="时间戳"
+        default_factory=lambda: datetime.now(timezone.utc).isoformat(), description="时间戳"
     )
     data: dict[str, Any] = Field(..., description="消息数据")
 

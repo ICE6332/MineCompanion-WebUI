@@ -15,3 +15,10 @@ dependencies = [
     "uvicorn[standard]>=0.38.0",
     "websockets>=15.0.1",
 ]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.3",
+    "pytest-asyncio>=0.23.6",
+    "pytest-cov>=5.0.0",
+]

@@ -10,114 +10,80 @@ from models.monitor import MessageStats, ConnectionStatus, TokenTrendStats, Toke
 
 
 class MetricsCollector:
-    """负责聚合消息统计与连接状态的单例工具。"""
+    """负责聚合消息统计与连接状态的实例化收集器。"""
 
-    _instance: "MetricsCollector" | None = None
-    _stats: MessageStats
-    _connection_status: ConnectionStatus
-    _token_trend: Dict[str, int]
+    def __init__(self) -> None:
+        self._stats: MessageStats
+        self._connection_status: ConnectionStatus
+        self._token_trend: Dict[str, int]
+        self.reset_stats()
+        self._connection_status = ConnectionStatus()
+        self._token_trend = {}
 
-    def __new__(cls) -> "MetricsCollector":
-        """确保仅创建一个指标收集器实例。"""
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
-            cls.reset_stats()
-            cls._connection_status = ConnectionStatus()
-            cls._token_trend = {}
-        return cls._instance
-
-    @classmethod
-    def _ensure_instance(cls) -> None:
-        """保证在访问前已经完成初始化。"""
-        if cls._instance is None:
-            cls()
-
-    @classmethod
-    def _ensure_messages_dict(cls) -> None:
+    def _ensure_messages_dict(self) -> None:
         """保证消息类型统计一直使用 defaultdict。"""
-        cls._ensure_instance()
-        if not isinstance(cls._stats.messages_per_type, defaultdict):
-            existing: Dict[str, int] = dict(cls._stats.messages_per_type or {})
-            cls._stats.messages_per_type = defaultdict(int, existing)
+        if not isinstance(self._stats.messages_per_type, defaultdict):
+            existing: Dict[str, int] = dict(self._stats.messages_per_type or {})
+            self._stats.messages_per_type = defaultdict(int, existing)
 
-    @classmethod
-    def record_message_received(cls, message_type: str) -> None:
+    def record_message_received(self, message_type: str) -> None:
         """记录接收到的消息数量。"""
-        cls._ensure_instance()
-        cls._stats.total_received += 1
-        cls._ensure_messages_dict()
-        messages_per_type: Dict[str, int] = cls._stats.messages_per_type
+        self._stats.total_received += 1
+        self._ensure_messages_dict()
+        messages_per_type: Dict[str, int] = self._stats.messages_per_type
         messages_per_type[message_type] += 1
 
-    @classmethod
-    def record_message_sent(cls, message_type: str) -> None:
+    def record_message_sent(self, message_type: str) -> None:
         """记录发送出去的消息数量。"""
-        cls._ensure_instance()
-        cls._stats.total_sent += 1
-        cls._ensure_messages_dict()
-        messages_per_type: Dict[str, int] = cls._stats.messages_per_type
+        self._stats.total_sent += 1
+        self._ensure_messages_dict()
+        messages_per_type: Dict[str, int] = self._stats.messages_per_type
         messages_per_type[message_type] += 1
 
-    @classmethod
-    def set_mod_connected(cls, client_id: str) -> None:
+    def set_mod_connected(self, client_id: str) -> None:
         """更新模组连接状态。"""
-        cls._ensure_instance()
-        cls._connection_status.mod_client_id = client_id
-        cls._connection_status.mod_connected_at = datetime.utcnow()
+        self._connection_status.mod_client_id = client_id
+        self._connection_status.mod_connected_at = datetime.now(timezone.utc)
 
-    @classmethod
-    def set_mod_disconnected(cls) -> None:
+    def set_mod_disconnected(self) -> None:
         """标记模组断开连接。"""
-        cls._ensure_instance()
-        cls._connection_status.mod_client_id = None
-        cls._connection_status.mod_connected_at = None
+        self._connection_status.mod_client_id = None
+        self._connection_status.mod_connected_at = None
 
-    @classmethod
-    def update_mod_last_message(cls) -> None:
+    def update_mod_last_message(self) -> None:
         """刷新模组最近一次消息时间。"""
-        cls._ensure_instance()
-        cls._connection_status.mod_last_message_at = datetime.utcnow()
+        self._connection_status.mod_last_message_at = datetime.now(timezone.utc)
 
-    @classmethod
-    def set_llm_status(cls, provider: str, ready: bool) -> None:
+    def set_llm_status(self, provider: str, ready: bool) -> None:
         """设置当前 LLM 连接状态。"""
-        cls._ensure_instance()
-        cls._connection_status.llm_provider = provider
-        cls._connection_status.llm_ready = ready
+        self._connection_status.llm_provider = provider
+        self._connection_status.llm_ready = ready
 
-    @classmethod
-    def get_stats(cls) -> MessageStats:
+    def get_stats(self) -> MessageStats:
         """返回当前消息统计信息。"""
-        cls._ensure_instance()
-        return cls._stats
+        return self._stats
 
-    @classmethod
-    def get_connection_status(cls) -> ConnectionStatus:
+    def get_connection_status(self) -> ConnectionStatus:
         """返回当前连接状态。"""
-        cls._ensure_instance()
-        return cls._connection_status
+        return self._connection_status
 
-    @classmethod
-    def record_token_usage(cls, tokens: int) -> None:
+    def record_token_usage(self, tokens: int) -> None:
         """记录 token 消耗，自动按当前小时聚合。"""
-        cls._ensure_instance()
         now = datetime.now(timezone.utc)
         hour_key = now.strftime("%Y-%m-%d %H:00")
-        cls._token_trend[hour_key] = cls._token_trend.get(hour_key, 0) + tokens
+        self._token_trend[hour_key] = self._token_trend.get(hour_key, 0) + tokens
 
         cutoff = now - timedelta(hours=24)
         outdated_keys = [
-            key for key in cls._token_trend
-            # 将存储键解析为 UTC aware 时间以避免时区比较错误
+            key
+            for key in list(self._token_trend.keys())
             if datetime.strptime(key, "%Y-%m-%d %H:00").replace(tzinfo=timezone.utc) < cutoff
         ]
         for key in outdated_keys:
-            del cls._token_trend[key]
+            del self._token_trend[key]
 
-    @classmethod
-    def get_token_trend(cls) -> TokenTrendStats:
+    def get_token_trend(self) -> TokenTrendStats:
         """返回最近 24 小时的 token 趋势统计。"""
-        cls._ensure_instance()
         now = datetime.now(timezone.utc).replace(minute=0, second=0, microsecond=0)
 
         trend_points = []
@@ -126,7 +92,7 @@ class MetricsCollector:
         for offset in range(23, -1, -1):
             hour_dt = now - timedelta(hours=offset)
             hour_key = hour_dt.strftime("%Y-%m-%d %H:00")
-            tokens = cls._token_trend.get(hour_key, 0)
+            tokens = self._token_trend.get(hour_key, 0)
             total_tokens += tokens
             trend_points.append(
                 TokenTrendPoint(
@@ -142,13 +108,12 @@ class MetricsCollector:
             last_updated=now,
         )
 
-    @classmethod
-    def reset_stats(cls) -> None:
+    def reset_stats(self) -> None:
         """重置全部统计计数。"""
-        cls._stats = MessageStats(
+        self._stats = MessageStats(
             total_received=0,
             total_sent=0,
             messages_per_type={},
             last_reset_at=datetime.now(timezone.utc),
         )
-        cls._stats.messages_per_type = defaultdict(int)
+        self._stats.messages_per_type = defaultdict(int)

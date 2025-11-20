@@ -6,6 +6,12 @@ Primary Fabric mod sources live in `src/main/java/com/aicompanion/...` (commands
 ## Build, Test, and Development Commands
 Use `build-mod.bat setup|build|run|clean` from the project root for the common workflow: download sources, build the remapped JAR, launch the dev client, or clean artifacts. Direct Gradle is fine (`gradlew.bat build`, `gradlew.bat runClient`) when scripting. Prefer relative paths when referencing the frontend (`npm --prefix MineCompanionAI-WebUI run dev`).
 
+### Python / 后端依赖管理（强制）
+- 一律使用 `uv` 管理与安装依赖、创建虚拟环境和运行命令；禁止使用 `pip install`（包含 `--user` 或系统级安装）。
+- 项目虚拟环境路径固定为 `.venv`，缓存目录可用 `UV_CACHE_DIR` 指定（默认 `.uv-cache`）。
+- 安装/同步依赖示例：`UV_PROJECT_ENV=.venv uv sync --dev --extra dev`
+- 运行工具或测试示例：`UV_PROJECT_ENV=.venv uv run uvicorn main:app --host 0.0.0.0 --port 8080`；`uv run --with pytest --with pytest-asyncio --with pytest-cov pytest -q`
+
 ### Frontend Component Workflow
 - Before building or adding frontend components, verify the installed component library CLI version (e.g., `npm --prefix frontend ls @shadcn/ui` or an equivalent check).
 - Components must be scaffolded via the component library CLI; do not hand-write component skeletons.

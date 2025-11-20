@@ -37,7 +37,7 @@ class WebSocketRateLimiter:
         Returns:
             True 如果未超限，False 如果已超限
         """
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         
         # 清理超出时间窗口的旧记录
         while (self.message_times[client_id] and 
@@ -71,7 +71,7 @@ class WebSocketRateLimiter:
         Returns:
             剩余可发送的消息数量
         """
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         
         # 清理过期记录
         while (self.message_times[client_id] and 

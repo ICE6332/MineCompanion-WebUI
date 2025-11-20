@@ -6,6 +6,12 @@ import uvicorn
 from api import websocket, monitor_ws, stats
 from api.routes import llm
 from api.middleware import SecurityHeadersMiddleware
+from core.dependencies import get_event_bus
+from api.monitor_ws import register_monitor_subscriptions
+from api.health import router as health_router
+from core.logging_config import setup_logging
+import os
+import logging
 
 app = FastAPI(
     title="MineCompanionAI-WebUI",
@@ -28,21 +34,27 @@ app.include_router(websocket.router, tags=["WebSocket"])
 app.include_router(monitor_ws.router, tags=["Monitor"])
 app.include_router(stats.router, prefix="/api/stats", tags=["Statistics"])
 app.include_router(llm.router)
+app.include_router(health_router)
+
+# 初始化日志
+logger = setup_logging(level=os.getenv("LOG_LEVEL", "INFO"), log_file=os.getenv("LOG_FILE"))
 @app.on_event("startup")
 async def startup_event():
-    print("=" * 60)
-    print("MineCompanionAI-WebUI Starting...")
-    print("=" * 60)
-    print("API Docs:  http://localhost:8080/docs")
-    print("Frontend:  http://localhost:5173 (dev)")
-    print("WebSocket: ws://localhost:8080/ws")
-    print("Monitor WS: ws://localhost:8080/ws/monitor")
-    print("=" * 60)
+    logger.info("=" * 60)
+    logger.info("MineCompanionAI-WebUI Starting...")
+    logger.info("API Docs:  http://localhost:8080/docs")
+    logger.info("Frontend:  http://localhost:5173 (dev)")
+    logger.info("WebSocket: ws://localhost:8080/ws")
+    logger.info("Monitor WS: ws://localhost:8080/ws/monitor")
+    logger.info("=" * 60)
+    # 注册监控事件订阅，将事件广播到前端监控页面
+    event_bus = get_event_bus()
+    register_monitor_subscriptions(event_bus)
 
 
 @app.on_event("shutdown")
 async def shutdown_event():
-    print("MineCompanionAI-WebUI shutting down...")
+    logger.info("MineCompanionAI-WebUI shutting down...")
 
 
 @app.get("/health", include_in_schema=False)
