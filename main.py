@@ -1,10 +1,12 @@
 from fastapi import FastAPI
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 import os
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from api import websocket, monitor_ws, stats
 from api.routes import llm
@@ -101,11 +103,30 @@ async def health_check():
     return {"status": "ok", "version": app.version}
 
 
-@app.get("/", include_in_schema=False)
-@app.get("", include_in_schema=False)
-async def index():
-    # 根路径默认跳转到 API 文档，避免返回 404 Not Found
-    return RedirectResponse(url="/docs")
+# 静态文件目录配置
+STATIC_DIR = Path(__file__).parent / "static" / "dist"
+
+if STATIC_DIR.exists():
+    # 生产模式：提供编译后的前端
+    @app.get("/", include_in_schema=False)
+    async def serve_frontend():
+        """返回编译后的前端 index.html"""
+        index_file = STATIC_DIR / "index.html"
+        if index_file.exists():
+            return FileResponse(index_file)
+        # 如果 index.html 不存在，跳转到 API 文档
+        return RedirectResponse(url="/docs")
+
+    # 挂载静态资源目录（CSS, JS, 字体等）
+    app.mount("/assets", StaticFiles(directory=STATIC_DIR / "assets"), name="assets")
+    logger.info("✅ 生产模式：静态文件服务已启用 (路径: %s)", STATIC_DIR)
+else:
+    # 开发模式：前端由 Vite 开发服务器提供，根路径跳转到 API 文档
+    @app.get("/", include_in_schema=False)
+    async def dev_mode_redirect():
+        """开发模式：跳转到 API 文档"""
+        return RedirectResponse(url="/docs")
+    logger.info("⚠️ 开发模式：未找到静态文件目录，根路径跳转到 /docs")
 
 
 if __name__ == "__main__":

@@ -47,7 +47,7 @@ export function getMenuList(pathname: string): Group[] {
         },
         {
           href: "/ai-chat",
-          label: "AI 对话",
+          label: "AI 对话测试",
           icon: BotMessageSquareIcon
         }
       ]
