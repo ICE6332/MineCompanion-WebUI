@@ -24,7 +24,7 @@
 
 - **Node.js** >= 18.0.0 ([下载地址](https://nodejs.org/))
 - **Python** >= 3.14 ([下载地址](https://www.python.org/downloads/))
-- **uv** (Python 包管理器，推荐) ([安装指南](https://github.com/astral-sh/uv))
+- **uv** (Python 包管理器，十分推荐) ([安装指南](https://github.com/astral-sh/uv))
 
 ### 安装 uv（推荐）
 
@@ -41,6 +41,21 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 ---
 
 ## 🚀 快速开始
+
+### 0. 获取项目
+
+**方式一：从 Release 下载（推荐普通用户）**
+
+1. 访问 [Releases 页面](https://github.com/ICE6332/MineCompanion-WebUI/releases)
+2. 下载最新版本的 `Source code (zip)` 或 `Source code (tar.gz)`
+3. 解压到任意目录
+
+**方式二：使用 Git Clone（推荐开发者）**
+
+```bash
+git clone https://github.com/ICE6332/MineCompanion-WebUI.git
+cd MineCompanion-WebUI
+```
 
 ### 1. 安装依赖
 
@@ -265,14 +280,16 @@ MineCompanionAI-WebUI/
 **已知问题**:
 - Windows 控制台可能显示编码错误（不影响功能）
 - 角色卡管理功能尚未实现（计划中）
-- AI 测试界面后会直接退出不保存
-- 
+- AI 对话测试无法保存
+- 分析页面目前为UI展示，尚未实现功能
 
 **下个版本计划**:
 - 角色卡 CRUD 功能（创建、编辑、删除角色）
 - 会话历史管理
 - 记忆系统（短期/长期记忆）
 - 决策引擎集成
+- UI 逻辑实现
+- 实现游戏内交互功能
 
 ---
 
@@ -286,8 +303,26 @@ MineCompanionAI-WebUI/
 
 ## 📄 开源协议
 
-本项目采用 MIT License
+本项目采用 **GNU Affero General Public License v3.0 (AGPL-3.0)** 协议开源。
+
+**允许的商业行为**：
+- ✅ 在企业内部部署和使用（无需公开源码）
+- ✅ 为客户定制开发并交付源码（需遵守 AGPL-3.0）
+- ✅ 基于本项目提供技术支持和咨询服务
+
+**禁止的商业行为**：
+- ❌ 闭源商业化（将修改后的代码作为专有软件销售）
+- ❌ SaaS 闭源运营（提供在线服务但不公开修改后的源码）
+- ❌ 集成到闭源产品中（除非整个产品也采用 AGPL-3.0）
+
+### 免责声明
+
+本软件按"原样"提供，不提供任何明示或暗示的担保，包括但不限于适销性、特定用途的适用性和非侵权性的担保。在任何情况下，作者或版权持有人均不对任何索赔、损害或其他责任负责，无论是在合同诉讼、侵权行为还是其他方面。
 
 ---
 
 **享受你的 AI 伙伴吧！** 🎮✨
+
+---
+
+**注意**：使用本项目前，请仔细阅读并理解 AGPL-3.0 协议条款。如有疑问，建议咨询法律顾问。
