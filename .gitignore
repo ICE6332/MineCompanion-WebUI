@@ -1,3 +1,8 @@
+# ==================================================
+# RELEASE BRANCH .gitignore
+# This branch contains ONLY compiled frontend + backend
+# ==================================================
+
 # Python
 __pycache__/
 *.py[cod]
@@ -13,7 +18,6 @@ requirements.txt
 *.sqlite
 *.db
 
-
 # Environment variables
 .env
 .env.local
@@ -22,7 +26,26 @@ requirements.txt
 # Configuration files with sensitive data
 config/settings.json
 
-# Node.js / Frontend
+# =============================================
+# FRONTEND SOURCE CODE (excluded in release)
+# =============================================
+frontend/src/
+frontend/public/
+frontend/package.json
+frontend/package-lock.json
+frontend/tsconfig.json
+frontend/tsconfig.node.json
+frontend/vite.config.ts
+frontend/postcss.config.js
+frontend/tailwind.config.js
+frontend/components.json
+frontend/.eslintrc.cjs
+frontend/index.html
+
+# Keep compiled output (frontend/dist/) - DO NOT IGNORE
+# frontend/dist/  # ← COMMENTED OUT for release
+
+# Node.js dependencies (not needed in release)
 node_modules/
 npm-debug.log*
 yarn-debug.log*
@@ -30,8 +53,7 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-# Frontend build output
-frontend/dist/
+# Frontend build artifacts (other than dist/)
 frontend/build/
 frontend/.next/
 static/dist/
@@ -75,18 +97,13 @@ htmlcov/
 *.bak
 *.cache
 
-# Project documentation (parent directory config files)
+# Documentation
 AGENTS.md
 CLAUDE.md
 
 # Temporary issue tracking documents
 *-issue.md
 *.issue.md
-
-# Package manager locks (keep these for reproducibility, comment out if needed)
-# package-lock.json
-# yarn.lock
-# pnpm-lock.yaml
 
 # Local npm cache (Windows)
 .npm-cache/
