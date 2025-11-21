@@ -11,7 +11,13 @@ from api.protocol import CompactProtocol
 from api.validation import ModMessage
 from api.rate_limiter import WebSocketRateLimiter
 from core.monitor.token_tracker import TokenTracker
-from core.dependencies import EventBusDep, MetricsDep, ConnectionManagerDep
+from core.dependencies import (
+    EventBusDep,
+    MetricsDep,
+    ConnectionManagerDep,
+    LLMDep,
+    ConversationContextDep,
+)
 from config.settings import settings
 from api.handlers.registry import get_handler
 from api.handlers.context import HandlerContext
@@ -31,6 +37,8 @@ async def websocket_endpoint(
     event_bus: EventBusDep,
     metrics: MetricsDep,
     conn_mgr: ConnectionManagerDep,
+    llm_service: LLMDep,
+    conversation_context: ConversationContextDep,
 ):
     """
     WebSocket 端点
@@ -132,7 +140,13 @@ async def websocket_endpoint(
             metrics.update_mod_last_message()
 
             handler = get_handler(msg_type)
-            context = HandlerContext(client_id=client_id, event_bus=event_bus, metrics=metrics)
+            context = HandlerContext(
+                client_id=client_id,
+                event_bus=event_bus,
+                metrics=metrics,
+                llm_service=llm_service,
+                conversation_context=conversation_context,
+            )
             response_preview = None
             if handler:
                 response_preview = await handler.handle(websocket, normalized_msg, context)

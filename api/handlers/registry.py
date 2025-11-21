@@ -3,11 +3,14 @@
 from api.handlers.connection import ConnectionInitHandler
 from api.handlers.game_state import GameStateHandler
 from api.handlers.conversation import ConversationHandler
+from api.handlers.player_lifecycle import PlayerConnectedHandler, PlayerDisconnectedHandler
 
 MESSAGE_HANDLERS = {
     "connection_init": ConnectionInitHandler(),
     "game_state_update": GameStateHandler(),
     "conversation_request": ConversationHandler(),
+    "player_connected": PlayerConnectedHandler(),
+    "player_disconnected": PlayerDisconnectedHandler(),
 }
 
 

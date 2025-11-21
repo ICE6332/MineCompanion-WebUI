@@ -1,7 +1,12 @@
 """消息处理上下文。"""
 
 from dataclasses import dataclass
-from core.interfaces import EventBusInterface, MetricsInterface
+from core.interfaces import (
+    EventBusInterface,
+    MetricsInterface,
+    LLMServiceInterface,
+    ConversationContextInterface,
+)
 
 
 @dataclass
@@ -11,3 +16,5 @@ class HandlerContext:
     client_id: str
     event_bus: EventBusInterface
     metrics: MetricsInterface
+    llm_service: LLMServiceInterface
+    conversation_context: ConversationContextInterface

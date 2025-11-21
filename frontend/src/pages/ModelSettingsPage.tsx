@@ -37,10 +37,31 @@ export function ModelSettingsPage() {
         baseUrl, setBaseUrl
     } = useModelSettings();
 
-    const handleSave = () => {
+    const handleSave = async () => {
         console.log("Saving settings:", { provider, model, apiKey, baseUrl });
         // Zustand persist middleware handles the saving to localStorage automatically
-        alert("设置已保存");
+
+        try {
+            const response = await fetch('/api/llm/config', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ provider, model, apiKey, baseUrl })
+            });
+
+            if (response.ok) {
+                console.log("Config saved to server");
+                alert("✅ 设置已保存到服务器");
+            } else {
+                console.log("Failed to save config", response.status, response.statusText);
+                alert("❌ 保存失败: " + response.statusText);
+            }
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            console.log("Network error while saving config", message);
+            alert("❌ 网络错误: " + message);
+        }
     };
 
     return (

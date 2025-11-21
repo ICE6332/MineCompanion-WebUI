@@ -5,9 +5,10 @@
 
 import json
 import logging
+from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field
 
 from api.protocol import CompactProtocol
@@ -54,6 +55,15 @@ class ConversationRequest(BaseModel):
     )
 
     model_config = ConfigDict(populate_by_name=True)
+
+
+class LLMConfigRequest(BaseModel):
+    """LLM 配置保存请求。"""
+
+    provider: str = Field(..., min_length=1, description="服务提供商标识")
+    model: str = Field(..., min_length=1, description="模型名称")
+    apiKey: str = Field(..., description="访问密钥")
+    baseUrl: str = Field(..., description="自定义 API Base URL")
 
 
 @router.post("/player")
@@ -126,3 +136,66 @@ async def handle_player_request(payload: ConversationRequest, llm: LLMDep) -> Di
     except Exception as exc:
         logger.exception("处理 LLM 请求失败: %s", exc)
         raise HTTPException(status_code=500, detail=f"LLM 处理失败: {str(exc)}") from exc
+
+
+@router.post("/config")
+async def save_llm_config(payload: LLMConfigRequest, llm: LLMDep, request: Request) -> Dict[str, str]:
+    """保存 LLM 配置并刷新后端依赖。"""
+
+    settings_path = Path("config/settings.json")
+    try:
+        logger.info(
+            "收到 LLM 配置保存请求: provider=%s, model=%s, baseUrl=%s, apiKey=%s",
+            payload.provider,
+            payload.model,
+            payload.baseUrl,
+            _mask_api_key(payload.apiKey),
+        )
+
+        config_data: Dict[str, Any] = {}
+        if settings_path.exists():
+            with open(settings_path, "r", encoding="utf-8") as file:
+                loaded = json.load(file)
+                if isinstance(loaded, dict):
+                    config_data = loaded
+        else:
+            settings_path.parent.mkdir(parents=True, exist_ok=True)
+
+        llm_section = config_data.get("llm", {})
+        if not isinstance(llm_section, dict):
+            llm_section = {}
+
+        llm_section.update(
+            {
+                "provider": payload.provider,
+                "model": payload.model,
+                "api_key": payload.apiKey,
+                "base_url": payload.baseUrl,
+            }
+        )
+        config_data["llm"] = llm_section
+
+        with open(settings_path, "w", encoding="utf-8") as file:
+            json.dump(config_data, file, ensure_ascii=False, indent=2)
+
+        # 热重载 HTTP 路由使用的 LLM 实例
+        if hasattr(llm, "_load_config"):
+            try:
+                llm.config = llm._load_config()  # type: ignore[attr-defined]
+                logger.info("HTTP 路由 LLM 配置已重新加载")
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("HTTP 路由 LLM 配置热加载失败: %s", exc)
+
+        # 热重载 WebSocket 使用的 LLM 实例
+        if hasattr(request.app.state, "llm_service"):
+            try:
+                if hasattr(request.app.state.llm_service, "_load_config"):
+                    request.app.state.llm_service.config = request.app.state.llm_service._load_config()
+                    logger.info("✅ WebSocket LLM 配置已重新加载")
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("WebSocket LLM 配置热加载失败: %s", exc)
+
+        return {"status": "ok", "message": "配置已保存"}
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("保存 LLM 配置失败: %s", exc)
+        raise HTTPException(status_code=500, detail="保存 LLM 配置失败，请稍后重试") from exc

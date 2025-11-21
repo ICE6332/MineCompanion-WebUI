@@ -101,3 +101,22 @@ class ConnectionManagerInterface(Protocol):
 
     def count(self) -> int:
         ...
+
+
+class ConversationContextInterface(Protocol):
+    """会话上下文接口，管理游戏玩家的历史消息。"""
+
+    def create_session(self, client_id: str, player_name: str):
+        ...
+
+    def add_message(self, client_id: str, role: str, content: str, player_name: Optional[str] = None) -> None:
+        ...
+
+    def get_history(self, client_id: str) -> List[Dict[str, Any]]:
+        ...
+
+    def clear_session(self, client_id: str) -> None:
+        ...
+
+    def has_session(self, client_id: str) -> bool:
+        ...

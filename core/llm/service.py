@@ -215,6 +215,7 @@ class LLMService:
         messages: List[Dict[str, str]],
         temperature: float = 0.7,
         max_tokens: Optional[int] = None,
+        use_cache: bool = True,
         **kwargs
     ) -> Dict[str, Any]:
         """
@@ -224,6 +225,7 @@ class LLMService:
             messages: 消息列表，例如 [{"role": "user", "content": "hello"}]
             temperature: 温度参数
             max_tokens: 最大生成 token 数
+            use_cache: 是否使用缓存（默认 True），对话场景建议设为 False
             **kwargs: 其他 LiteLLM 支持的参数
 
         Returns:
@@ -234,13 +236,18 @@ class LLMService:
         params: Dict[str, Any] | None = None
 
         try:
-            
+            # 对于 custom provider（OpenAI 兼容的第三方 API），转换为 openai
+            # 这样 LiteLLM 会使用 OpenAI 的协议格式 + 自定义 api_base
+            if provider == "custom":
+                provider = "openai"
+                logger.info("📝 检测到 custom provider，转换为 openai 协议格式")
+
             # 构建完整的模型名称
             # 如果是 openai 兼容的第三方服务，通常不需要加 provider 前缀，或者直接用 model 名
             # LiteLLM 约定：对于 openai 兼容接口，如果 provider 是 openai，可以直接用 model 名
             # 如果是 anthropic/gemini 等，litellm 通常需要前缀，如 "anthropic/claude-3"
             # 这里我们做一个简单的处理：如果 provider 不是 openai，且 model 不包含 /，则加上前缀
-            
+
             full_model_name = model
             if provider == "openai":
                 normalized_model = model.split("/", 1)[-1]
@@ -316,7 +323,7 @@ class LLMService:
             request_url = self._resolve_request_url(provider, params)
 
             cache_key = None
-            if settings.llm_cache_enabled and self.cache:
+            if use_cache and settings.llm_cache_enabled and self.cache:
                 cache_key = generate_cache_key(messages, self.config["model"], temperature)
                 cached = await self.cache.get(cache_key)
                 if cached:
@@ -396,7 +403,7 @@ class LLMService:
                 response.get("usage"),
             )
 
-            if settings.llm_cache_enabled and self.cache and cache_key:
+            if use_cache and settings.llm_cache_enabled and self.cache and cache_key:
                 try:
                     await self.cache.set(cache_key, json.dumps(response), ttl=settings.llm_cache_ttl)
                 except Exception as cache_exc:  # noqa: BLE001

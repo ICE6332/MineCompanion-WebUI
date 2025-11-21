@@ -19,6 +19,7 @@ from core.monitor.connection_manager import ConnectionManager
 from core.llm.service import LLMService
 from core.storage.memory import MemoryCacheStorage
 from core.storage.redis import RedisCacheStorage
+from core.memory.conversation_context import ConversationContext
 
 
 logger = setup_logging(level=os.getenv("LOG_LEVEL", "INFO"), log_file=os.getenv("LOG_FILE"))
@@ -35,6 +36,7 @@ async def lifespan(app: FastAPI):
     app.state.metrics = MetricsCollector()
     app.state.connection_manager = ConnectionManager()
     app.state.llm_service = LLMService(cache_storage=cache_storage)
+    app.state.conversation_context = ConversationContext()
 
     logger.info("存储后端: %s", settings.storage_backend)
     # 注册监控事件订阅，将事件广播到前端监控页面
@@ -64,7 +66,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="MineCompanionAI-WebUI",
-    version="0.4.0",
+    version="0.5.0-beta",
     description="AI Companion Control Panel & Service",
     lifespan=lifespan,
 )
