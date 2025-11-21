@@ -1,20 +1,83 @@
 #!/usr/bin/env node
 'use strict';
 
-const { spawn } = require('child_process');
+const { spawn, exec } = require('child_process');
 const path = require('path');
 const treeKill = require('tree-kill');
 
 const backendEntry = path.join(__dirname, '..', 'main.py').replace(/\\/g, '/');
+const SERVER_URL = 'http://localhost:8080';
 
 console.log(`使用 uv run python 启动后端服务（入口: ${backendEntry}）。`);
 
+let hasOpened = false;
+
+function openBrowser(url) {
+  if (hasOpened) return;
+  hasOpened = true;
+
+  const command = process.platform === 'win32'
+    ? `start ${url}`
+    : process.platform === 'darwin'
+    ? `open ${url}`
+    : `xdg-open ${url}`;
+
+  exec(command, (error) => {
+    if (error) {
+      console.error(`⚠️  自动打开浏览器失败: ${error.message}`);
+      console.log(`请手动访问: ${url}`);
+    } else {
+      console.log(`✅ 已在浏览器中打开: ${url}`);
+    }
+  });
+}
+
 const child = spawn('uv', ['run', 'python', backendEntry], {
-  stdio: 'inherit',
+  stdio: ['inherit', 'pipe', 'pipe'], // 捕获 stdout 和 stderr
   shell: false,
   cwd: path.join(__dirname, '..'),
   detached: false,
 });
+
+// 监听 stdout 输出
+child.stdout.on('data', (data) => {
+  const output = data.toString();
+  process.stdout.write(output);
+
+  // 检测到启动成功消息
+  if (output.includes('Application startup complete') && !hasOpened) {
+    showStartupMessage();
+  }
+});
+
+// 监听 stderr 输出
+child.stderr.on('data', (data) => {
+  const output = data.toString();
+  process.stderr.write(output);
+
+  // stderr 中也可能包含启动成功消息
+  if (output.includes('Application startup complete') && !hasOpened) {
+    showStartupMessage();
+  }
+});
+
+function showStartupMessage() {
+  if (hasOpened) return;
+  hasOpened = true;
+
+  setTimeout(() => {
+    console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('🚀 MineCompanionAI-WebUI 已成功启动！');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log(`📍 Web 界面:  ${SERVER_URL}`);
+    console.log(`📖 API 文档:  ${SERVER_URL}/docs`);
+    console.log(`🔧 健康检查:  ${SERVER_URL}/health`);
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('💡 提示: 按 Ctrl+C 停止服务器\n');
+
+    openBrowser(SERVER_URL);
+  }, 500); // 延迟500ms确保服务器完全就绪
+}
 
 // 记录子进程 PID 便于调试
 child.on('spawn', () => {
@@ -27,7 +90,7 @@ let isCleaning = false;
 const cleanup = (code, signal, fromExitEvent = false) => {
   if (isCleaning) return;
   isCleaning = true;
-  console.log(`收到退出信号: code=${code}, signal=${signal}`);
+  console.log(`\n收到退出信号: code=${code}, signal=${signal}`);
 
   if (child && child.pid && !child.killed) {
     console.log(`正在清理后端进程树 (PID: ${child.pid})...`);

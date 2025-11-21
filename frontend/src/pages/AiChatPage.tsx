@@ -56,17 +56,21 @@ const AiChatPage = () => {
     }
   }, [settingsModel]);
 
-  const handleSubmit = async () => {
-    if (!input.trim() || isLoading) return;
+  const handleSubmit = async (messageText?: string) => {
+    const textToSend = messageText || input.trim();
+    if (!textToSend || isLoading) return;
 
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
       role: "user",
-      content: input,
+      content: textToSend,
     };
 
-    setMessages((prev) => [...prev, userMessage]);
-    setInput("");
+    // 只有在没有提供 messageText 时才添加用户消息（避免重新生成时重复）
+    if (!messageText) {
+      setMessages((prev) => [...prev, userMessage]);
+      setInput("");
+    }
     setIsLoading(true);
 
     try {
@@ -97,7 +101,7 @@ const AiChatPage = () => {
           type: "conversation_request",
           playerName: "User",
           companionName: "AI",
-          message: input,
+          message: textToSend,
           timestamp: new Date().toISOString(),
           llmConfig: {
             provider,
@@ -136,13 +140,50 @@ const AiChatPage = () => {
     }
   };
 
+  const handleRegenerate = async (messageId: string) => {
+    // 找到当前 AI 消息的索引
+    const messageIndex = messages.findIndex((msg) => msg.id === messageId);
+    if (messageIndex === -1) return;
+
+    // 找到上一条用户消息
+    let userMessage: ChatMessage | undefined;
+    for (let i = messageIndex - 1; i >= 0; i--) {
+      if (messages[i].role === "user") {
+        userMessage = messages[i];
+        break;
+      }
+    }
+
+    if (!userMessage) {
+      console.error("无法找到对应的用户消息");
+      return;
+    }
+
+    // 删除当前 AI 消息
+    setMessages((prev) => prev.filter((msg) => msg.id !== messageId));
+
+    // 重新发送请求
+    await handleSubmit(userMessage.content);
+  };
+
+  const handleCopy = (content: string) => {
+    navigator.clipboard.writeText(content).then(
+      () => {
+        console.log("内容已复制到剪贴板");
+      },
+      (err) => {
+        console.error("复制失败:", err);
+      }
+    );
+  };
+
   const handleModelChange = (value: string) => {
     setSelectedModel(value);
     setSettingsModel(value);
   };
 
   return (
-    <ContentLayout title="AI 对话">
+    <ContentLayout title="AI 对话测试">
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
@@ -152,7 +193,7 @@ const AiChatPage = () => {
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>AI 对话</BreadcrumbPage>
+            <BreadcrumbPage>AI 对话测试</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
@@ -173,17 +214,30 @@ const AiChatPage = () => {
                 </MessageContent>
                 {message.role === "assistant" && !message.isLoading && (
                   <div className="flex items-center gap-2 pt-2">
-                    <Button variant="ghost" size="icon" className="h-6 w-6">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6"
+                      onClick={() => handleCopy(message.content)}
+                      title="复制"
+                    >
                       <Copy className="h-3.5 w-3.5" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-6 w-6">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6"
+                      onClick={() => handleRegenerate(message.id)}
+                      disabled={isLoading}
+                      title="重新生成"
+                    >
                       <RotateCcw className="h-3.5 w-3.5" />
                     </Button>
                     <div className="flex-1" />
-                    <Button variant="ghost" size="icon" className="h-6 w-6">
+                    <Button variant="ghost" size="icon" className="h-6 w-6" title="点赞">
                       <ThumbsUp className="h-3.5 w-3.5" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-6 w-6">
+                    <Button variant="ghost" size="icon" className="h-6 w-6" title="点踩">
                       <ThumbsDown className="h-3.5 w-3.5" />
                     </Button>
                   </div>

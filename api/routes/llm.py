@@ -106,9 +106,9 @@ async def handle_player_request(payload: ConversationRequest, llm: LLMDep) -> Di
             {"role": "user", "content": f"[{player_name}]: {message_content}"}
         ]
 
-        # 2. 调用 LLM 服务
+        # 2. 调用 LLM 服务（禁用缓存，确保每次对话都是新生成的）
         logger.info("LLM 消息内容: %s", messages)
-        response = await llm.chat_completion(messages=messages)
+        response = await llm.chat_completion(messages=messages, use_cache=False)
 
         # 3. 解析响应
         llm_reply = response["choices"][0]["message"]["content"]
