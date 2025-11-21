@@ -1,220 +1,277 @@
 # MineCompanionAI-WebUI
 
-> AI 伴侣控制面板 - 为 Minecraft AI 伴侣模组提供可视化配置和管理界面
+> **为 Minecraft AI 伴侣模组提供的智能控制面板**
+> v0.5.0-beta | [GitHub 仓库](https://github.com/ICE6332/MineCompanion-BOT)
 
-一个现代化的 Web 应用，用于管理和配置 Minecraft AI 伴侣的行为、人格和交互方式。
-
----
-
-## ✨ 特性
-
-- 🎨 **现代化 UI**: React 19 + Tailwind CSS v4 + shadcn/ui
-- 🔧 **角色卡管理**: 可视化编辑 AI 人格、提示词和行为配置
-- 🔌 **实时通信**: WebSocket 连接 Minecraft Mod，实时推送配置
-- 📦 **模块化架构**: 清晰的前后端分离，易于扩展
-- 🚀 **开发友好**: 一键启动，热重载支持
+一个现代化的 Web 应用，帮助你配置和管理 Minecraft 中的 AI 伴侣。通过直观的界面轻松设置 AI 人格、测试对话效果、监控运行状态。
 
 ---
 
-## 🏗️ 技术栈
+## 🌟 主要功能
 
-### 前端
-- **框架**: React 19 + TypeScript + Vite
-- **UI 库**: shadcn/ui (基于 Radix UI)
-- **样式**: Tailwind CSS v4
-- **状态管理**: Zustand
-
-### 后端
-- **框架**: FastAPI (Python)
-- **数据验证**: Pydantic
-- **通信**: WebSocket
-- **存储**: JSON 文件系统
+- 🤖 **AI 对话测试**: 在游戏外测试 AI 伴侣的对话效果，支持重新生成回复
+- 👤 **角色管理**: 可视化编辑 AI 人格、行为参数和提示词
+- 📊 **监控面板**: 实时查看系统运行状态、消息统计和 Token 使用趋势
+- ⚙️ **模型设置**: 支持多种 LLM 提供商（OpenAI、Claude、Gemini 等）
+- 🌐 **Web 界面**: 友好的中文界面，响应式设计，支持暗色模式
+- 🚀 **一键启动**: 自动打开浏览器，显示启动信息，无需手动配置
 
 ---
 
-## 📦 安装
+## 📋 系统要求
 
-### 前置要求
+在开始之前，请确保你的系统已安装：
 
-- Node.js >= 18.0.0
-- Python >= 3.12
-- npm >= 9.0.0
-- uv (推荐) 或 pip
+- **Node.js** >= 18.0.0 ([下载地址](https://nodejs.org/))
+- **Python** >= 3.14 ([下载地址](https://www.python.org/downloads/))
+- **uv** (Python 包管理器，推荐) ([安装指南](https://github.com/astral-sh/uv))
 
-### 安装依赖
+### 安装 uv（推荐）
 
-#### Python 后端依赖
-
-**使用 uv（推荐）**：
-```bash
-# 安装uv（如果还没有）
-curl -fsSL https://astral.sh/uv/install.sh | sh
-
-# 同步依赖（自动创建.venv并安装所有包）
-uv sync
+**Windows (PowerShell)**:
+```powershell
+irm https://astral.sh/uv/install.ps1 | iex
 ```
 
-**使用 pip（兼容方式）**：
+**Linux/macOS**:
 ```bash
-# 安装依赖（使用锁定版本）
-pip install -r requirements.lock.txt
-```
-
-#### 前端依赖
-```bash
-cd frontend && npm install
-```
-
-#### 根目录依赖
-```bash
-npm install
+curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
 ---
 
 ## 🚀 快速开始
 
-### 一键启动（推荐）
+### 1. 安装依赖
+
+**首次安装时，依次运行以下命令**：
 
 ```bash
-npm run dev
+# 安装 Python 依赖
+uv sync
+
+# 安装根目录 Node.js 依赖
+npm install
 ```
 
-这将同时启动：
-- 后端服务: http://localhost:8080
-- 前端开发服务器: http://localhost:5173
+> 💡 `uv sync` 会自动创建 Python 虚拟环境并安装所有后端依赖
 
-### 单独启动
+### 2. 启动应用
 
-**仅后端**:
+**一键启动（推荐）**：
 ```bash
-# 使用uv（推荐，自动使用项目虚拟环境）
-uv run python main.py
-
-# 或使用npm script（已集成uv）
-npm run dev:backend
-
-# 或直接运行（需要先激活.venv）
-python main.py
+npm start
 ```
 
-**仅前端**:
-```bash
-cd frontend && npm run dev
+启动成功后，浏览器会自动打开 http://localhost:8080，你将看到：
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🚀 MineCompanionAI-WebUI 已成功启动！
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📍 Web 界面:  http://localhost:8080
+📖 API 文档:  http://localhost:8080/docs
+🔧 健康检查:  http://localhost:8080/health
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+💡 提示: 按 Ctrl+C 停止服务器
 ```
 
 ---
 
 ## 📖 使用指南
 
-### 创建角色卡
+### 配置 LLM 提供商
 
-1. 访问 http://localhost:5173
-2. 点击"创建角色卡"按钮
-3. 填写名称、提示词、行为参数
-4. 点击"保存"
+首次使用前，需要配置大语言模型（LLM）：
 
-### WebSocket 连接
+1. 访问 http://localhost:8080
+2. 进入 **"模型设置"** 页面（左侧菜单）
+3. 选择你的 LLM 提供商：
+   - **OpenAI**: 需要 API Key（[获取地址](https://platform.openai.com/api-keys)）
+   - **自定义 API**: 支持任何 OpenAI 兼容的 API（如 Ollama、LiteLLM）
+4. 填写配置信息：
+   - Provider（提供商）: 如 `openai`
+   - Model（模型名称）: 如 `gpt-4o`, `gpt-3.5-turbo`
+   - API Key（密钥）: 你的 API 密钥
+   - Base URL（可选）: 自定义 API 端点
+5. 点击 **"保存配置"**
 
-点击右上角"Connect"按钮连接到后端
+> ⚠️ 配置保存后会自动应用，无需重启服务
 
-连接状态：
-- 🟢 已连接
-- 🟡 连接中
-- 🔴 未连接
+### 测试 AI 对话
+
+配置完成后，进入 **"AI 对话测试"** 页面：
+
+1. 在输入框中输入消息
+2. 选择要使用的模型（右下角下拉菜单）
+3. 点击发送按钮（或按 Enter）
+4. AI 回复后，你可以：
+   - 📋 **复制回复内容**（点击复制按钮）
+   - 🔄 **重新生成回复**（点击刷新按钮）
+   - 👍👎 **反馈评价**（点赞/点踩）
+
+> 💡 每次对话都会生成新的回复，不会使用缓存
+
+### 管理角色卡
+
+**角色卡** 定义了 AI 伴侣的人格、行为和对话风格：
+
+1. 进入 **"角色测试"** 页面
+2. 点击 **"创建角色卡"** 或编辑已有角色
+3. 配置角色参数：
+   - **名称**: 角色的名字
+   - **提示词**: 定义角色人格和行为的系统提示
+   - **行为配置**: 跟随距离、对话频率等参数
+4. 保存后可在游戏中加载使用
+
+### 监控系统状态
+
+**监控面板** 显示实时运行数据：
+
+- **连接状态**: Mod 连接、LLM 提供商
+- **消息统计**: 收发消息数量、类型分布
+- **Token 趋势**: 24 小时 Token 使用量图表
+- **事件日志**: 实时事件流（WebSocket 消息、LLM 请求等）
 
 ---
 
-## 🗂️ 项目结构
+## 🎨 界面预览
 
-```
-MineCompanionAI-WebUI/
-├── frontend/          # React 前端
-├── api/              # FastAPI 路由
-├── models/           # 数据模型
-├── config/           # 配置存储
-└── main.py           # 入口文件
-```
+### 控制台
+- 查看系统概览、统计数据和图表
 
----
+### AI 对话测试
+- 测试对话效果，调整模型参数
 
-## 🔧 API 文档
+### 监控面板
+- 实时监控系统运行状态和事件
 
-### REST API
-
-| 端点 | 方法 | 描述 |
-|------|------|------|
-| /health | GET | 健康检查（兼容探活） |
-| /api/health | GET | 健康检查 |
-| /api/cards | GET | 获取所有角色卡 |
-| /api/cards | POST | 保存角色卡 |
-| /api/cards/{id} | DELETE | 删除角色卡 |
-
-### WebSocket
-
-端点: ws://localhost:8080/ws
-
-详细文档: http://localhost:8080/docs
+### 模型设置
+- 配置 LLM 提供商和 API 密钥
 
 ---
 
-## 🛠️ 开发
+## 🔧 高级配置
 
-### 构建前端
+### 环境变量
+
+你可以通过 `.env` 文件自定义配置：
+
 ```bash
-cd frontend && npm run build
+# 存储后端（memory 或 redis）
+STORAGE_BACKEND=memory
+
+# Redis 配置（使用 redis 时）
+REDIS_URL=redis://localhost:6379
+
+# LLM 缓存
+LLM_CACHE_ENABLED=true
+LLM_CACHE_TTL=3600
+
+# 监控配置
+EVENT_HISTORY_SIZE=100
+RATE_LIMIT_MESSAGES=100
+RATE_LIMIT_WINDOW=60
 ```
 
 ### 生产部署
+
+如果你想在生产环境运行：
+
 ```bash
-npm run build
-python main.py
+# 1. 编译前端
+cd frontend && npm run build
+
+# 2. 启动后端（生产模式）
+npm start
 ```
+
+> 生产模式下，后端会自动提供编译后的前端静态文件
 
 ---
 
-## 🐛 故障排查
+## 🐛 常见问题
 
-### 后端启动失败
-
-**依赖问题**：
+### Q: 启动时提示 "uv: command not found"
+**A**: 请按照上方说明安装 uv，或使用 pip 安装依赖：
 ```bash
-# 使用uv重新同步依赖
-uv sync
-
-# 或使用pip重新安装
 pip install -r requirements.lock.txt
 ```
 
-**虚拟环境问题**：
-```bash
-# 删除旧环境重建
-rm -rf .venv
-uv sync
-```
+### Q: 浏览器没有自动打开
+**A**: 手动访问 http://localhost:8080 即可
 
-### 前端构建失败
+### Q: LLM 请求失败，提示 "API Key 未配置"
+**A**: 请先进入"模型设置"页面配置 LLM 提供商和 API Key
+
+### Q: 前端显示"无法连接到后端"
+**A**: 检查后端是否正常启动：
 ```bash
-cd frontend
-npm install tailwindcss@latest @tailwindcss/vite@latest --save-dev
+curl http://localhost:8080/health
 ```
+如果返回 `{"status":"ok"}` 说明后端正常
+
+### Q: Windows 控制台显示乱码
+**A**: 这是 Windows GBK 编码问题，不影响功能，可以忽略
+
+### Q: 如何更换 LLM 模型？
+**A**: 在"AI 对话测试"页面右下角的下拉菜单中选择，或者在"模型设置"中修改默认模型
 
 ---
 
-## 🗺️ 路线图
+## 📦 项目结构
 
-- [x] 项目骨架和基础 UI
-- [x] 角色卡 CRUD 功能
-- [x] WebSocket 通信
-- [ ] LLM 集成
-- [ ] 记忆系统
-- [ ] 决策引擎
+```
+MineCompanionAI-WebUI/
+├── api/              # FastAPI 后端路由
+├── core/             # 核心业务逻辑（LLM、存储、监控）
+├── config/           # 配置文件和角色卡存储
+├── models/           # 数据模型（Pydantic）
+├── static/dist/      # 编译后的前端（生产模式）
+├── scripts/          # 启动脚本
+├── main.py           # 后端入口
+└── README.md         # 本文档
+```
+
+> 📝 前端源码在开发分支 `develop/0.5.0-beta` 中
 
 ---
 
-## 📄 许可证
+## 🗺️ 版本说明
 
-MIT License
+### v0.5.0-beta (当前版本)
+
+**新增功能**:
+- ✅ AI 对话测试页面（支持重新生成）
+- ✅ 完整的角色卡 CRUD 功能
+- ✅ 实时监控面板（WebSocket 事件流）
+- ✅ Token 使用趋势图表（24 小时）
+- ✅ 多 LLM 提供商支持（OpenAI、Claude、Gemini 等）
+- ✅ 启动横幅和自动浏览器打开
+- ✅ 生产模式静态文件服务
+
+**已知问题**:
+- Windows 控制台可能显示编码错误（不影响功能）
+- 记忆系统尚未实现（计划中）
+
+**下个版本计划**:
+- 会话历史管理
+- 记忆系统（短期/长期记忆）
+- 决策引擎集成
+
+---
+
+## 💬 反馈与支持
+
+- **问题反馈**: [GitHub Issues](https://github.com/ICE6332/MineCompanion-BOT/issues)
+- **功能建议**: 在 Issues 中提出你的想法
+- **文档贡献**: 欢迎 PR 改进文档
+
+---
+
+## 📄 开源协议
+
+本项目采用 MIT License
 
 ---
 
