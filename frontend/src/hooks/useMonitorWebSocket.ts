@@ -15,7 +15,9 @@ export interface UseMonitorWebSocketReturn {
   resetStats: () => void;
 }
 
-const RECONNECT_DELAY = 3000;
+const INITIAL_RECONNECT_DELAY = 1000; // 1 秒
+const MAX_RECONNECT_DELAY = 30000; // 30 秒
+const MAX_RECONNECT_ATTEMPTS = 10; // 最多重连 10 次
 const MAX_HISTORY = 100;
 
 export const useMonitorWebSocket = (
@@ -31,10 +33,24 @@ export const useMonitorWebSocket = (
     useState<ConnectionStatus | null>(null);
   const [stats, setStats] = useState<MessageStats | null>(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [reconnectAttempts, setReconnectAttempts] = useState<number>(0);
+  const [reconnectDelay, setReconnectDelay] = useState<number>(
+    INITIAL_RECONNECT_DELAY,
+  );
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
+  const reconnectAttemptsRef = useRef<number>(reconnectAttempts);
+  const reconnectDelayRef = useRef<number>(reconnectDelay);
+
+  useEffect(() => {
+    reconnectAttemptsRef.current = reconnectAttempts;
+  }, [reconnectAttempts]);
+
+  useEffect(() => {
+    reconnectDelayRef.current = reconnectDelay;
+  }, [reconnectDelay]);
 
   const clearReconnectTimer = useCallback(() => {
     if (reconnectTimeoutRef.current) {
@@ -59,6 +75,10 @@ export const useMonitorWebSocket = (
     ws.onopen = () => {
       console.log("[Monitor] WebSocket 已连接");
       setIsConnected(true);
+      setReconnectAttempts(0);
+      setReconnectDelay(INITIAL_RECONNECT_DELAY);
+      reconnectAttemptsRef.current = 0;
+      reconnectDelayRef.current = INITIAL_RECONNECT_DELAY;
     };
 
     ws.onmessage = (event) => {
@@ -87,18 +107,47 @@ export const useMonitorWebSocket = (
       console.error("[Monitor] WebSocket 发生错误:", error);
     };
 
-    ws.onclose = () => {
+    ws.onclose = (event: CloseEvent) => {
+      const isServerShutdown = event.code === 1001 || event.code === 1000;
+
       console.log(
-        `[Monitor] WebSocket 已断开，将在 ${RECONNECT_DELAY / 1000} 秒后重连`,
+        `[Monitor] WebSocket 已断开 (code: ${event.code}, reason: ${
+          event.reason || "无"
+        })`,
       );
       setIsConnected(false);
       setConnectionStatus(null);
       setStats(null);
       wsRef.current = null;
+      clearReconnectTimer();
+
+      const attempts = reconnectAttemptsRef.current;
+      if (attempts >= MAX_RECONNECT_ATTEMPTS) {
+        console.error(
+          `[Monitor] 达到最大重连次数 (${MAX_RECONNECT_ATTEMPTS})，停止重连`,
+        );
+        return;
+      }
+
+      const delay = isServerShutdown ? 5000 : reconnectDelayRef.current;
+
+      console.log(
+        `[Monitor] 将在 ${delay / 1000} 秒后重连（第 ${attempts + 1} 次尝试）`,
+      );
 
       reconnectTimeoutRef.current = setTimeout(() => {
+        setReconnectAttempts((prev) => {
+          const next = prev + 1;
+          reconnectAttemptsRef.current = next;
+          return next;
+        });
+        setReconnectDelay((prev) => {
+          const next = Math.min(prev * 2, MAX_RECONNECT_DELAY);
+          reconnectDelayRef.current = next;
+          return next;
+        });
         connect();
-      }, RECONNECT_DELAY);
+      }, delay);
     };
 
     wsRef.current = ws;

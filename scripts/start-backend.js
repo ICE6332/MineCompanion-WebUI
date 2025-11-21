@@ -27,6 +27,7 @@ let isCleaning = false;
 const cleanup = (code, signal, fromExitEvent = false) => {
   if (isCleaning) return;
   isCleaning = true;
+  console.log(`收到退出信号: code=${code}, signal=${signal}`);
 
   if (child && child.pid && !child.killed) {
     console.log(`正在清理后端进程树 (PID: ${child.pid})...`);
@@ -39,7 +40,7 @@ const cleanup = (code, signal, fromExitEvent = false) => {
         }
       });
 
-      // 2秒后强制清理：SIGKILL（确保进程树被彻底杀死）
+      // 5秒后强制清理：SIGKILL（确保进程树被彻底杀死）
       setTimeout(() => {
         if (!child.killed) {
           treeKill(child.pid, 'SIGKILL', (err) => {
@@ -50,7 +51,7 @@ const cleanup = (code, signal, fromExitEvent = false) => {
             }
           });
         }
-      }, 2000);
+      }, 5000);
     } catch (err) {
       console.error(`停止后端进程失败: ${err.message}`);
     }

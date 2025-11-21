@@ -42,11 +42,24 @@ async def lifespan(app: FastAPI):
     yield
 
     # Shutdown: 清理资源
+    logger.info("开始清理资源...")
+
+    # 1. 先关闭所有 WebSocket 连接
+    connection_manager = getattr(app.state, "connection_manager", None)
+    if connection_manager is not None:
+        try:
+            await connection_manager.close_all()
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("关闭 WebSocket 连接失败: %s", exc)
+
+    # 2. 关闭缓存存储
     if hasattr(cache_storage, "close"):
         try:
             await cache_storage.close()  # type: ignore[attr-defined]
         except Exception as exc:  # noqa: BLE001
             logger.warning("关闭缓存存储失败: %s", exc)
+
+    logger.info("资源清理完成")
 
 
 app = FastAPI(
@@ -72,20 +85,6 @@ app.include_router(monitor_ws.router, tags=["Monitor"])
 app.include_router(stats.router, prefix="/api/stats", tags=["Statistics"])
 app.include_router(llm.router)
 app.include_router(health_router)
-@app.on_event("startup")
-async def startup_event():
-    logger.info("=" * 60)
-    logger.info("MineCompanionAI-WebUI Starting...")
-    logger.info("API Docs:  http://localhost:8080/docs")
-    logger.info("Frontend:  http://localhost:5173 (dev)")
-    logger.info("WebSocket: ws://localhost:8080/ws")
-    logger.info("Monitor WS: ws://localhost:8080/ws/monitor")
-    logger.info("=" * 60)
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    logger.info("MineCompanionAI-WebUI shutting down...")
 
 
 @app.get("/health", include_in_schema=False)
@@ -108,4 +107,40 @@ async def index():
 
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8080, reload=True)
+    import asyncio
+    import socket
+
+    # 禁用 reload 避免子进程残留，由自定义 socket 控制端口复用
+    config = uvicorn.Config(
+        "main:app",
+        host="0.0.0.0",
+        port=8080,
+        reload=False,
+        log_level="info",
+        access_log=False,
+        timeout_keep_alive=5,
+        limit_concurrency=100,
+    )
+    server = uvicorn.Server(config)
+
+    def create_reusable_socket() -> socket.socket:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        if hasattr(socket, "SO_REUSEPORT"):
+            try:
+                sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+            except OSError:
+                logger.warning("SO_REUSEPORT 不可用，系统可能未提供该选项")
+        sock.bind((config.host or "0.0.0.0", int(config.port)))
+        sock.listen(config.backlog)
+        sock.setblocking(False)
+        return sock
+
+    async def serve() -> None:
+        sock = create_reusable_socket()
+        try:
+            await server.serve(sockets=[sock])
+        finally:
+            sock.close()
+
+    asyncio.run(serve())

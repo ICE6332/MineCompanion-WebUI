@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Save } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -28,17 +27,20 @@ import {
     BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { Link } from "react-router-dom";
+import { useModelSettings } from "@/store/model-settings";
 
 export function ModelSettingsPage() {
-    const [provider, setProvider] = useState("openai");
-    const [model, setModel] = useState("gpt-4");
-    const [apiKey, setApiKey] = useState("");
-    const [baseUrl, setBaseUrl] = useState("");
+    const {
+        provider, setProvider,
+        model, setModel,
+        apiKey, setApiKey,
+        baseUrl, setBaseUrl
+    } = useModelSettings();
 
     const handleSave = () => {
         console.log("Saving settings:", { provider, model, apiKey, baseUrl });
-        // TODO: Implement actual save logic (API call or local storage)
-        alert("设置已保存 (模拟)");
+        // Zustand persist middleware handles the saving to localStorage automatically
+        alert("设置已保存");
     };
 
     return (

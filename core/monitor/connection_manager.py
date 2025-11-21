@@ -5,10 +5,15 @@
 
 from __future__ import annotations
 
-from typing import Dict, Any
+import logging
+from typing import Dict
+
 from fastapi import WebSocket
 
 from core.interfaces import ConnectionManagerInterface
+
+
+logger = logging.getLogger(__name__)
 
 
 class ConnectionManager(ConnectionManagerInterface):
@@ -31,3 +36,15 @@ class ConnectionManager(ConnectionManagerInterface):
 
     def count(self) -> int:
         return len(self._connections)
+
+    async def close_all(self) -> None:
+        """优雅关闭所有活跃连接。"""
+        logger.info("正在关闭 %d 个活跃连接...", len(self._connections))
+        for client_id, ws in list(self._connections.items()):
+            try:
+                await ws.close(code=1001, reason="服务端正在关闭")
+                logger.debug("已关闭连接: %s", client_id)
+            except Exception as err:  # noqa: BLE001
+                logger.warning("关闭连接 %s 失败: %s", client_id, err)
+        self._connections.clear()
+        logger.info("所有连接已关闭")
