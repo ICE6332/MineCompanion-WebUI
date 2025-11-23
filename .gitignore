@@ -104,6 +104,7 @@ CLAUDE.md
 # Temporary issue tracking documents
 *-issue.md
 *.issue.md
+WARP.md
 
 # Local npm cache (Windows)
 .npm-cache/
