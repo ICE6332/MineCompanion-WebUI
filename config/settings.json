@@ -2,7 +2,7 @@
   "llm": {
     "provider": "custom",
     "model": "glm-4.6",
-    "api_key": "sk-C4sa4lGH2e95nBVdKOgShAVnDuQ4h2l4ix7BWmzRDIdJt3ZO",
+    "api_key": "sk-u7Y7i819GUUvh7kFAhuT7HILVojf4Lrjnjc7j7ueVkgqk5Rq",
     "base_url": "https://api.qhaigc.net/v1"
   },
   "service": {
