@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from 'recharts'
+import { Bar, BarChart, CartesianGrid, XAxis } from 'recharts'
 
 import {
   Card,
@@ -8,6 +8,12 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import {
+  ChartConfig,
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from '@/components/ui/chart'
 import { cn } from '@/lib/utils'
 
 type TokenTrendPoint = {
@@ -21,6 +27,13 @@ type TokenTrendChartProps = {
   loading?: boolean
   className?: string
 }
+
+const chartConfig = {
+  tokens: {
+    label: 'Token 消耗',
+    color: 'hsl(var(--primary))',
+  },
+} satisfies ChartConfig
 
 export function TokenTrendChart({
   data,
@@ -93,42 +106,37 @@ export function TokenTrendChart({
           最近 24 小时 Token 使用情况（本地时间 {userTimezone}）
         </CardDescription>
       </CardHeader>
-      <CardContent className='ps-2'>
-        <ResponsiveContainer width='100%' height={350}>
-          {loading ? (
-            <div className='flex h-full items-center justify-center text-sm text-muted-foreground'>
-              加载中...
-            </div>
-          ) : isEmpty ? (
-            <div className='flex h-full items-center justify-center text-sm text-muted-foreground'>
-              暂无 Token 数据
-            </div>
-          ) : (
-            <BarChart data={chartData}>
+      <CardContent>
+        {loading ? (
+          <div className='flex h-[350px] items-center justify-center text-sm text-muted-foreground'>
+            加载中...
+          </div>
+        ) : isEmpty ? (
+          <div className='flex h-[350px] items-center justify-center text-sm text-muted-foreground'>
+            暂无 Token 数据
+          </div>
+        ) : (
+          <ChartContainer config={chartConfig} className='h-[350px] w-full'>
+            <BarChart accessibilityLayer data={chartData}>
+              <CartesianGrid vertical={false} />
               <XAxis
                 dataKey='hour'
-                stroke='#888888'
-                fontSize={12}
                 tickLine={false}
+                tickMargin={10}
                 axisLine={false}
               />
-              <YAxis
-                direction='ltr'
-                stroke='#888888'
-                fontSize={12}
-                tickLine={false}
-                axisLine={false}
-                tickFormatter={(value) => `${value} Token`}
+              <ChartTooltip
+                cursor={false}
+                content={<ChartTooltipContent hideLabel />}
               />
               <Bar
                 dataKey='tokens'
-                fill='currentColor'
+                fill='var(--color-tokens)'
                 radius={[4, 4, 0, 0]}
-                className='fill-primary'
               />
             </BarChart>
-          )}
-        </ResponsiveContainer>
+          </ChartContainer>
+        )}
       </CardContent>
     </Card>
   )

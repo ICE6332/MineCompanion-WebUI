@@ -12,56 +12,31 @@ import {
 } from "@/components/ui/breadcrumb"
 
 import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Switch } from "@/components/ui/switch"
+import AvatarUpload from "@/components/character/avatar-upload"
 
 const TestCardPage = () => {
-  const [jsonText, setJsonText] = useState<string>(
-    JSON.stringify(
-      {
-        type: "conversation_message",
-        data: {
-          companionName: "AICompanion",
-          text: "你好，这是从 Web UI 发送的测试消息。",
-        },
-      },
-      null,
-      2,
-    ),
-  )
-  const [sendStatus, setSendStatus] = useState<string | null>(null)
-  const [sending, setSending] = useState(false)
+  const [character, setCharacter] = useState({
+    name: "AI Companion",
+    description: "A helpful AI assistant.",
+    personality: "Friendly, helpful, and knowledgeable.",
+    systemPrompt: "You are a helpful AI assistant.",
+    isActive: true,
+  })
 
-  const handleSendJson = async () => {
-    setSendStatus(null)
+  const handleAvatarChange = (file: File) => {
+    console.log("Avatar changed:", file)
+    // Handle file upload logic here
+  }
 
-    let payload: unknown
-    try {
-      payload = JSON.parse(jsonText)
-    } catch {
-      setSendStatus("JSON 格式错误，请检查后重试")
-      return
-    }
-
-    setSending(true)
-    try {
-      const res = await fetch("/api/ws/send-json", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      })
-
-      if (!res.ok) {
-        const text = await res.text()
-        setSendStatus(`发送失败：${res.status} ${text || ""}`.trim())
-      } else {
-        setSendStatus("发送成功，请在游戏内聊天栏查看效果")
-      }
-    } catch {
-      setSendStatus("发送失败：网络或服务异常")
-    } finally {
-      setSending(false)
-    }
+  const handleSave = (e: React.FormEvent) => {
+    e.preventDefault()
+    console.log("Saving character:", character)
+    // Handle save logic here
   }
 
   return (
@@ -80,44 +55,105 @@ const TestCardPage = () => {
         </BreadcrumbList>
       </Breadcrumb>
 
-      <div className="mt-6 space-y-6">
+      <section className="container mx-auto py-6 max-w-4xl space-y-6">
         <header className="space-y-3">
-          <h2 className="text-3xl md:text-4xl font-bold">WebSocket 测试工具</h2>
-          <p className="text-muted-foreground max-w-3xl">
-            从 Web UI 直接向 AI 服务发送自定义 JSON 消息，用于测试 Mod ↔ Service 通信链路。
+          <h2 className="text-3xl md:text-4xl font-bold">编辑角色卡</h2>
+          <p className="text-muted-foreground">
+            自定义 AI 角色的外观、性格和行为模式。
           </p>
         </header>
 
-        <section aria-labelledby="ws-json-test" className="max-w-4xl">
-          <Card>
-            <CardHeader>
-              <CardTitle>发送自定义 JSON 消息</CardTitle>
-              <CardDescription>
-                编辑 JSON 并通过服务端转发到当前模组实例，用于验证通信是否正常。建议先使用
-                <code className="mx-1 text-xs bg-muted px-1 py-0.5 rounded">conversation_message</code>
-                类型作为示例。
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Textarea
-                rows={14}
-                value={jsonText}
-                onChange={(event) => setJsonText(event.target.value)}
-                placeholder='在此粘贴要发送的 JSON，例如 { "type": "conversation_message", "data": { ... } }'
-                className="font-mono text-sm"
-              />
-              <div className="flex items-center gap-3">
-                <Button type="button" onClick={handleSendJson} disabled={sending}>
-                  {sending ? "发送中..." : "发送 JSON 消息到模组"}
-                </Button>
-                {sendStatus ? (
-                  <span className="text-sm text-muted-foreground">{sendStatus}</span>
-                ) : null}
+        <Card className="w-full p-6 lg:p-8">
+          <div className="mb-6">
+            <h3 className="text-2xl font-semibold">角色信息</h3>
+            <p className="text-muted-foreground mt-1 text-sm">
+              配置角色的基本信息和核心设定。
+            </p>
+          </div>
+
+          <form onSubmit={handleSave} className="space-y-8">
+            <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start">
+              <div className="flex-shrink-0">
+                <AvatarUpload onChange={handleAvatarChange} />
+                <p className="text-muted-foreground mt-2 text-xs text-center">
+                  点击或拖拽上传
+                </p>
               </div>
-            </CardContent>
-          </Card>
-        </section>
-      </div>
+              <div className="flex-1 space-y-4 w-full">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">角色名称</Label>
+                    <Input
+                      id="name"
+                      value={character.name}
+                      onChange={(e) => setCharacter({ ...character, name: e.target.value })}
+                      placeholder="例如：Emiya"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="isActive">启用状态</Label>
+                    <div className="flex items-center gap-2 h-10">
+                      <Switch
+                        id="isActive"
+                        checked={character.isActive}
+                        onCheckedChange={(checked) => setCharacter({ ...character, isActive: checked })}
+                      />
+                      <span className="text-sm text-muted-foreground">
+                        {character.isActive ? "已启用" : "已禁用"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="description">简短描述</Label>
+                  <Input
+                    id="description"
+                    value={character.description}
+                    onChange={(e) => setCharacter({ ...character, description: e.target.value })}
+                    placeholder="一句话描述角色的主要特征..."
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="personality">性格设定 (Personality)</Label>
+                <Textarea
+                  id="personality"
+                  value={character.personality}
+                  onChange={(e) => setCharacter({ ...character, personality: e.target.value })}
+                  placeholder="详细描述角色的性格、说话方式和行为习惯..."
+                  rows={4}
+                  className="resize-y"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="systemPrompt">系统提示词 (System Prompt)</Label>
+                <Textarea
+                  id="systemPrompt"
+                  value={character.systemPrompt}
+                  onChange={(e) => setCharacter({ ...character, systemPrompt: e.target.value })}
+                  placeholder="角色的核心指令和规则设定..."
+                  rows={6}
+                  className="font-mono text-sm resize-y"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-4 pt-4 border-t">
+              <Button type="submit" className="flex-1 sm:flex-none sm:w-32">
+                保存更改
+              </Button>
+              <Button type="button" variant="destructive" className="flex-1 sm:flex-none sm:w-32">
+                删除角色
+              </Button>
+            </div>
+          </form>
+        </Card>
+      </section>
     </ContentLayout>
   )
 }

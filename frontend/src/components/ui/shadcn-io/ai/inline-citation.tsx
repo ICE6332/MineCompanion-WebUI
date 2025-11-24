@@ -64,7 +64,7 @@ export const InlineCitationCardTrigger = ({
   className,
   ...props
 }: InlineCitationCardTriggerProps) => (
-  <HoverCardTrigger asChild>
+  <HoverCardTrigger>
     <Badge
       className={cn('ml-1 rounded-full', className)}
       variant="secondary"
@@ -99,13 +99,13 @@ export const InlineCitationCarousel = ({
   ...props
 }: InlineCitationCarouselProps) => {
   const [api, setApi] = useState<CarouselApi>();
-  
+
   return (
     <CarouselApiContext.Provider value={api}>
-      <Carousel 
-        className={cn('w-full', className)} 
+      <Carousel
+        className={cn('w-full', className)}
         setApi={setApi}
-        {...props} 
+        {...props}
       >
         {children}
       </Carousel>
