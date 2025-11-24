@@ -1,5 +1,6 @@
 # MineCompanionAI-WebUI
 
+> **仓库已归档**
 > **为 Minecraft AI 伴侣模组提供的智能控制面板**
 > v0.5.0-beta | [GitHub 仓库](https://github.com/ICE6332/MineCompanion-BOT)
 
